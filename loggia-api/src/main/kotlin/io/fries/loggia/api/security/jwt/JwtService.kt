@@ -8,25 +8,28 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Service
 import java.time.Duration
+import java.time.ZonedDateTime
 import java.util.*
 
 @Service
 class JwtService(
-        @Value("\${loggia.jwt.secret}") private val secret: String,
-        @Value("#{T(java.time.Duration).ofSeconds('\${loggia.jwt.validity}')}") private val validity: Duration
+        @Value("\${loggia.security.jwt.secret}") private val secret: String,
+        @Value("#{T(java.time.Duration).ofSeconds('\${loggia.security.jwt.validity}')}") private val validity: Duration,
+        private val clock: () -> ZonedDateTime
 ) {
 
     fun subjectOf(token: String): String = claimOf(token, Claims::getSubject)
 
     fun isValid(token: String, userDetails: UserDetails) = subjectOf(token) == userDetails.username && !isTokenExpired(token)
 
-    private fun isTokenExpired(token: String) = expirationOf(token).before(Date())
+    private fun isTokenExpired(token: String) = expirationOf(token).before(Date.from(clock().toInstant()))
 
     private fun expirationOf(token: String): Date = claimOf(token, Claims::getExpiration)
 
     private fun <T> claimOf(token: String, resolveClaim: (Claims) -> T) = resolveClaim(claimsOf(token))
 
     private fun claimsOf(token: String) = Jwts.parser()
+            .setClock { Date.from(clock().toInstant()) }
             .setSigningKey(secret)
             .parseClaimsJws(token)
             .body
@@ -39,8 +42,8 @@ class JwtService(
     private fun generateToken(subject: String, claims: Map<String, Any>) = Jwts.builder()
             .setClaims(claims)
             .setSubject(subject)
-            .setIssuedAt(Date())
-            .setExpiration(Date(System.currentTimeMillis() + validity.toMillis()))
+            .setIssuedAt(Date.from(clock().toInstant()))
+            .setExpiration(Date.from(clock().plus(validity).toInstant()))
             .signWith(HS512, secret)
             .compact()
 }

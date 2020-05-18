@@ -11,9 +11,8 @@ class JwtUserDetailsService : UserDetailsService {
     /**
      * TODO: Remove hardcoded authentication (user/password)
      */
-    override fun loadUserByUsername(username: String?) = if ("user" == username) {
-        User("user", "$2a$10\$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6", ArrayList())
-    } else {
-        throw UsernameNotFoundException("User [$username] could not be found.")
+    override fun loadUserByUsername(username: String?) = when (username) {
+        "user" -> User("user", "$2a$10\$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6", ArrayList())
+        else -> throw UsernameNotFoundException("User [$username] could not be found.")
     }
 }
