@@ -3,7 +3,6 @@ package io.fries.loggia.api.security
 import io.fries.loggia.api.security.jwt.JwtAuthenticationEntryPoint
 import io.fries.loggia.api.security.jwt.JwtRequestFilter
 import io.fries.loggia.api.security.jwt.JwtUserDetailsService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
@@ -25,24 +24,25 @@ class WebSecurityConfiguration(
         private val jwtRequestFilter: JwtRequestFilter
 ) : WebSecurityConfigurerAdapter() {
 
-    @Autowired
-    fun configureGlobal(auth: AuthenticationManagerBuilder) {
-        auth.userDetailsService(jwtUserDetailsService).passwordEncoder(passwordEncoder());
-    }
-
     @Bean
     fun passwordEncoder() = BCryptPasswordEncoder()
 
     @Bean
     override fun authenticationManagerBean(): AuthenticationManager? = super.authenticationManagerBean()
 
+    override fun configure(authenticationManagerBuilder: AuthenticationManagerBuilder) {
+        authenticationManagerBuilder
+                .userDetailsService(jwtUserDetailsService)
+                .passwordEncoder(passwordEncoder())
+    }
+
     override fun configure(http: HttpSecurity?) {
-        http!!.csrf().disable()
+        http!!.cors().and()
+                .csrf().disable()
                 .authorizeRequests().antMatchers("/login").permitAll()
                 .anyRequest().authenticated().and()
                 .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and()
-                .sessionManagement().sessionCreationPolicy(STATELESS)
-
-        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter::class.java)
+                .sessionManagement().sessionCreationPolicy(STATELESS).and()
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter::class.java)
     }
 }
