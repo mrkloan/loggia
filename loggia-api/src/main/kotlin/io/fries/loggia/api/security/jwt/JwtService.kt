@@ -2,14 +2,13 @@ package io.fries.loggia.api.security.jwt
 
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.SignatureAlgorithm.HS512
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.util.*
-import kotlin.collections.HashMap
 
 @Service
 class JwtService(
@@ -19,11 +18,11 @@ class JwtService(
 
     fun subjectOf(token: String): String = claimOf(token, Claims::getSubject)
 
-    private fun expirationOf(token: String): Date = claimOf(token, Claims::getExpiration)
-
     fun isValid(token: String, userDetails: UserDetails) = subjectOf(token) == userDetails.username && !isTokenExpired(token)
 
     private fun isTokenExpired(token: String) = expirationOf(token).before(Date())
+
+    private fun expirationOf(token: String): Date = claimOf(token, Claims::getExpiration)
 
     private fun <T> claimOf(token: String, resolveClaim: (Claims) -> T) = resolveClaim(claimsOf(token))
 
@@ -32,9 +31,10 @@ class JwtService(
             .parseClaimsJws(token)
             .body
 
-    fun generateToken(userDetails: UserDetails): String = generateToken(userDetails.username, mutableMapOf(
-            "roles" to userDetails.authorities.map { it.authority }
-    ))
+    fun generateTokenFor(authentication: Authentication): String = generateToken(
+            authentication.name,
+            mutableMapOf("roles" to authentication.authorities.map { it.authority })
+    )
 
     private fun generateToken(subject: String, claims: Map<String, Any>) = Jwts.builder()
             .setClaims(claims)
