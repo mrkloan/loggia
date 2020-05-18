@@ -1,7 +1,7 @@
 package io.fries.loggia.api.security
 
 import io.fries.loggia.api.security.jwt.JwtAuthenticationEntryPoint
-import io.fries.loggia.api.security.jwt.JwtRequestFilter
+import io.fries.loggia.api.security.jwt.JwtAuthenticationFilter
 import io.fries.loggia.api.security.jwt.JwtUserDetailsService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -21,7 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 class WebSecurityConfiguration(
         private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
         private val jwtUserDetailsService: JwtUserDetailsService,
-        private val jwtRequestFilter: JwtRequestFilter
+        private val jwtAuthenticationFilter: JwtAuthenticationFilter
 ) : WebSecurityConfigurerAdapter() {
 
     @Bean
@@ -43,6 +43,6 @@ class WebSecurityConfiguration(
                 .anyRequest().authenticated().and()
                 .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and()
                 .sessionManagement().sessionCreationPolicy(STATELESS).and()
-                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter::class.java)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
     }
 }
