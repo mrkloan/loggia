@@ -1,6 +1,6 @@
 package io.fries.loggia.api.security.jwt
 
-import io.fries.loggia.api.unixTime
+import io.fries.loggia.core.time.unixTime
 import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.SignatureException
 import org.assertj.core.api.Assertions.assertThat

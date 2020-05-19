@@ -20,6 +20,7 @@
 
     <modules>
         <module>loggia-api</module>
+        <module>loggia-core</module>
     </modules>
 
     <properties>

@@ -16,6 +16,14 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>io.fries.loggia</groupId>
+			<artifactId>loggia-core</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-reflect</artifactId>
 		</dependency>

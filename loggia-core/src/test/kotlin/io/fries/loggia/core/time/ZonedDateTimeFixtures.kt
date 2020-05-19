@@ -1,4 +1,4 @@
-package io.fries.loggia.api
+package io.fries.loggia.core.time
 
 import java.time.ZoneId
 import java.time.ZonedDateTime
