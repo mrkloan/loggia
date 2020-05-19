@@ -21,6 +21,7 @@
     <modules>
         <module>loggia-api</module>
         <module>loggia-core</module>
+        <module>loggia-web</module>
     </modules>
 
     <properties>
@@ -34,6 +35,9 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jaxb-impl.version>2.1</jaxb-impl.version>
         <jjwt.version>0.9.1</jjwt.version>
+
+        <frontend-maven-plugin.version>1.9.1</frontend-maven-plugin.version>
+        <frontend-maven-plugin.node.version>v14.2.0</frontend-maven-plugin.node.version>
     </properties>
 
     <dependencyManagement>
@@ -60,5 +64,20 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.github.eirslett</groupId>
+                    <artifactId>frontend-maven-plugin</artifactId>
+                    <version>${frontend-maven-plugin.version}</version>
+                    <configuration>
+                        <nodeVersion>${frontend-maven-plugin.node.version}</nodeVersion>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>
