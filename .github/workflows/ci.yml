@@ -15,5 +15,13 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - uses: actions/cache@v2.1.3
+        env:
+          cache-name: loggia
+        with:
+          path: ~/.m2/repository
+          key: ${{env.cache-name}}-maven-${{hashFiles('**/pom.xml')}}
+          restore-keys: |
+            ${{env.cache-name}}-maven
       - name: Run all tests
         run: mvn clean test
