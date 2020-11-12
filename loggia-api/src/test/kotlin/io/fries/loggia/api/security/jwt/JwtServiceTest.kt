@@ -53,7 +53,7 @@ internal class JwtServiceTest {
 
         val isValid = jwtService.isValid(aToken, aUser)
 
-        assertThat(isValid).isTrue()
+        assertThat(isValid).isTrue
     }
 
     @Test
@@ -63,7 +63,7 @@ internal class JwtServiceTest {
 
         val isValid = jwtService.isValid(aToken, aUser)
 
-        assertThat(isValid).isFalse()
+        assertThat(isValid).isFalse
     }
 
     @Test
