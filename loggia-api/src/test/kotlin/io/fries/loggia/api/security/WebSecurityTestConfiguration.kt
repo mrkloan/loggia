@@ -15,13 +15,13 @@ internal class WebSecurityTestConfiguration {
     private lateinit var securityContext: SecurityContext
 
     @MockBean
+    private lateinit var authenticationManager: AuthenticationManager
+
+    @MockBean
     private lateinit var jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint
 
     @MockBean
     private lateinit var jwtUserDetailsService: JwtUserDetailsService
-
-    @MockBean
-    private lateinit var authenticationManager: AuthenticationManager
 
     @MockBean
     private lateinit var jwtService: JwtService
