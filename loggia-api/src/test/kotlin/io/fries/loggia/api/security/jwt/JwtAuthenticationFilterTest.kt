@@ -53,6 +53,16 @@ internal class JwtAuthenticationFilterTest {
         `then the next filter is triggered`()
     }
 
+    @Test
+    internal fun `Should not authenticate any user given an empty Authorization header`() {
+        `given a request with an empty authorization header`()
+
+        `when the filter is triggered`()
+
+        `then there is no authentication`()
+        `then the next filter is triggered`()
+    }
+
     private fun `given some authorities`(): List<GrantedAuthority> {
         return listOf(
                 authorityOf("ROLE1"),
@@ -75,6 +85,10 @@ internal class JwtAuthenticationFilterTest {
 
     private fun `given a request without authorization header`() {
         given(theRequest.getHeader("Authorization")).willReturn(null)
+    }
+
+    private fun `given a request with an empty authorization header`() {
+        given(theRequest.getHeader("Authorization")).willReturn("")
     }
 
     private fun `when the filter is triggered`() {
