@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest
 class LoggiaApplicationTests {
 
 	@Test
-	fun contextLoads() {
+	fun `Should load application context`() {
 	}
 
 }

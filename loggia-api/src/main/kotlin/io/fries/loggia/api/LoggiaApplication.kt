@@ -5,6 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.context.SecurityContextHolder
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -17,6 +19,9 @@ class LoggiaApplication
 
 @Configuration
 class LoggiaConfiguration {
+
+    @Bean
+    fun securityContext(): SecurityContext = SecurityContextHolder.getContext()
 
     @Bean
     fun clock(@Value("\${loggia.clock.timezone}") timezone: String): () -> ZonedDateTime = {
