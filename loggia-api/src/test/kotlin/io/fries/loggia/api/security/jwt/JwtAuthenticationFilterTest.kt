@@ -1,9 +1,12 @@
 package io.fries.loggia.api.security.jwt
 
 import com.nhaarman.mockito_kotlin.*
+import io.fries.loggia.core.random.RandomExtension
+import io.fries.loggia.core.random.RandomFixtures
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.GrantedAuthority
@@ -14,6 +17,7 @@ import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
+@ExtendWith(RandomExtension::class)
 internal class JwtAuthenticationFilterTest {
 
     private val jwtUserDetailsService: JwtUserDetailsService = mock()
@@ -32,8 +36,8 @@ internal class JwtAuthenticationFilterTest {
     }
 
     @Test
-    internal fun `Should validate the authentication given a valid token`() {
-        val aUsername = "a-username"
+    internal fun `Should validate the authentication given a valid token`(random: RandomFixtures) {
+        val aUsername = random.anyStringStartingWith("username")
         val someAuthorities = `given some authorities`()
         `given a request with a valid authentication token for user`(aUsername, someAuthorities)
 
