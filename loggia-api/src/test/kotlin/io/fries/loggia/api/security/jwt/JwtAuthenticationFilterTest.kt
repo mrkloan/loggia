@@ -63,6 +63,16 @@ internal class JwtAuthenticationFilterTest {
         `then the next filter is triggered`()
     }
 
+    @Test
+    internal fun `Should not authenticate any user given a non-bearer Authorization header`() {
+        `given a request with a non-bearer authorization header`()
+
+        `when the filter is triggered`()
+
+        `then there is no authentication`()
+        `then the next filter is triggered`()
+    }
+
     private fun `given some authorities`(): List<GrantedAuthority> {
         return listOf(
                 authorityOf("ROLE1"),
@@ -91,6 +101,10 @@ internal class JwtAuthenticationFilterTest {
         given(theRequest.getHeader("Authorization")).willReturn("")
     }
 
+    private fun `given a request with a non-bearer authorization header`() {
+        given(theRequest.getHeader("Authorization")).willReturn("some-token")
+    }
+
     private fun `when the filter is triggered`() {
         jwtAuthenticationFilter.doFilter(theRequest, theResponse, theChain)
     }
@@ -106,11 +120,11 @@ internal class JwtAuthenticationFilterTest {
         assertThat(theAuthentication.details).isEqualTo(WebAuthenticationDetailsSource().buildDetails(theRequest))
     }
 
-    private fun `then the next filter is triggered`() {
-        verify(theChain).doFilter(theRequest, theResponse)
-    }
-
     private fun `then there is no authentication`() {
         verify(securityContext, never()).authentication = any()
+    }
+
+    private fun `then the next filter is triggered`() {
+        verify(theChain).doFilter(theRequest, theResponse)
     }
 }
