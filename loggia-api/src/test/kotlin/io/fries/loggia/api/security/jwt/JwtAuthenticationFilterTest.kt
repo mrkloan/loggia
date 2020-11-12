@@ -1,8 +1,6 @@
 package io.fries.loggia.api.security.jwt
 
-import com.nhaarman.mockito_kotlin.given
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
+import com.nhaarman.mockito_kotlin.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,6 +43,16 @@ internal class JwtAuthenticationFilterTest {
         `then the next filter is triggered`()
     }
 
+    @Test
+    internal fun `Should not authenticate any user given a request without an Authorization header`() {
+        `given a request without authorization header`()
+
+        `when the filter is triggered`()
+
+        `then there is no authentication`()
+        `then the next filter is triggered`()
+    }
+
     private fun `given some authorities`(): List<GrantedAuthority> {
         return listOf(
                 authorityOf("ROLE1"),
@@ -65,6 +73,10 @@ internal class JwtAuthenticationFilterTest {
         given(jwtService.isValid(token, userDetails)).willReturn(true)
     }
 
+    private fun `given a request without authorization header`() {
+        given(theRequest.getHeader("Authorization")).willReturn(null)
+    }
+
     private fun `when the filter is triggered`() {
         jwtAuthenticationFilter.doFilter(theRequest, theResponse, theChain)
     }
@@ -82,5 +94,9 @@ internal class JwtAuthenticationFilterTest {
 
     private fun `then the next filter is triggered`() {
         verify(theChain).doFilter(theRequest, theResponse)
+    }
+
+    private fun `then there is no authentication`() {
+        verify(securityContext, never()).authentication = any()
     }
 }
