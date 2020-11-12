@@ -35,7 +35,7 @@ internal class JwtAuthenticationFilterTest {
     internal fun `Should validate the authentication given a valid token`() {
         val aUsername = "a-username"
         val someAuthorities = `given some authorities`()
-        `given the request has a valid authentication token for user`(aUsername, someAuthorities)
+        `given a request with a valid authentication token for user`(aUsername, someAuthorities)
 
         `when the filter is triggered`()
 
@@ -83,7 +83,7 @@ internal class JwtAuthenticationFilterTest {
 
     private fun authorityOf(authority: String): GrantedAuthority = GrantedAuthority { authority }
 
-    private fun `given the request has a valid authentication token for user`(username: String, authorities: List<GrantedAuthority>) {
+    private fun `given a request with a valid authentication token for user`(username: String, authorities: List<GrantedAuthority>) {
         val token = "valid-jwt-token"
         val userDetails = User(username, "password", authorities)
 
