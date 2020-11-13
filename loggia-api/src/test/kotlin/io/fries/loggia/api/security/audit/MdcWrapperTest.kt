@@ -20,4 +20,13 @@ internal class MdcWrapperTest {
 
         assertThat(MDC.get("key")).isEqualTo("value")
     }
+
+    @Test
+    internal fun `Should remove value from MDC`() {
+        MDC.put("key", "value")
+
+        mdcWrapper.remove("key")
+
+        assertThat(MDC.get("key")).isNull()
+    }
 }
