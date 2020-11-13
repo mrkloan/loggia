@@ -1,14 +1,12 @@
 package io.fries.loggia.api.security.audit
 
-import com.nhaarman.mockito_kotlin.given
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.verify
-import org.assertj.core.api.Assertions.assertThat
+import com.nhaarman.mockitokotlin2.given
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.slf4j.MDC
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -19,6 +17,8 @@ internal class AuditFilterTest {
         private const val SUPPLIED_CORRELATION_ID = "a-generated-correlation-id"
     }
 
+    private val mdcWrapper: MdcWrapper = mock()
+
     private val theRequest: HttpServletRequest = mock()
     private val theResponse: HttpServletResponse = mock()
     private val theChain: FilterChain = mock()
@@ -27,7 +27,7 @@ internal class AuditFilterTest {
 
     @BeforeEach
     internal fun setUp() {
-        this.auditFilter = AuditFilter { SUPPLIED_CORRELATION_ID }
+        this.auditFilter = AuditFilter(mdcWrapper) { SUPPLIED_CORRELATION_ID }
     }
 
     @Test
@@ -36,7 +36,7 @@ internal class AuditFilterTest {
 
         auditFilter.doFilter(theRequest, theResponse, theChain)
 
-        assertThat(MDC.get("correlationId")).isEqualTo("aCorrelationId")
+        verify(mdcWrapper).put("correlationId", "aCorrelationId")
         verify(theChain).doFilter(theRequest, theResponse)
     }
 
@@ -46,7 +46,7 @@ internal class AuditFilterTest {
 
         auditFilter.doFilter(theRequest, theResponse, theChain)
 
-        assertThat(MDC.get("correlationId")).isEqualTo(SUPPLIED_CORRELATION_ID)
+        verify(mdcWrapper).put("correlationId", SUPPLIED_CORRELATION_ID)
         verify(theChain).doFilter(theRequest, theResponse)
     }
 
@@ -57,7 +57,7 @@ internal class AuditFilterTest {
 
         auditFilter.doFilter(theRequest, theResponse, theChain)
 
-        assertThat(MDC.get("correlationId")).isEqualTo(SUPPLIED_CORRELATION_ID)
+        verify(mdcWrapper).put("correlationId", SUPPLIED_CORRELATION_ID)
         verify(theChain).doFilter(theRequest, theResponse)
     }
 }

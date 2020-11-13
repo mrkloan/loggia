@@ -1,7 +1,7 @@
 package io.fries.loggia.api.security.jwt
 
-import com.nhaarman.mockito_kotlin.given
-import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockitokotlin2.given
+import com.nhaarman.mockitokotlin2.mock
 import io.fries.loggia.api.security.WebSecurityTestConfiguration
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

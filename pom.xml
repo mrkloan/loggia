@@ -37,7 +37,7 @@
         <jaxb-impl.version>2.1</jaxb-impl.version>
         <jjwt.version>0.9.1</jjwt.version>
         <logback-json.version>0.1.5</logback-json.version>
-        <mockito-kotlin.version>1.6.0</mockito-kotlin.version>
+        <mockito-kotlin.version>2.2.0</mockito-kotlin.version>
 
         <frontend-maven-plugin.version>1.9.1</frontend-maven-plugin.version>
         <frontend-maven-plugin.node.version>v14.2.0</frontend-maven-plugin.node.version>
@@ -77,7 +77,7 @@
                 <version>${logback-json.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.nhaarman</groupId>
+                <groupId>com.nhaarman.mockitokotlin2</groupId>
                 <artifactId>mockito-kotlin</artifactId>
                 <version>${mockito-kotlin.version}</version>
             </dependency>
