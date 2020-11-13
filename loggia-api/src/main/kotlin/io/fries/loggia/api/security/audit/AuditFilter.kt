@@ -1,10 +1,12 @@
 package io.fries.loggia.api.security.audit
 
+import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
+@Component
 class AuditFilter(
         private val mdc: MdcWrapper,
         private val supplyCorrelationId: () -> String
