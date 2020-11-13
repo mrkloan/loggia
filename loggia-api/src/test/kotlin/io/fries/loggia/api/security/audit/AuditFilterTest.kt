@@ -13,6 +13,10 @@ import javax.servlet.http.HttpServletResponse
 
 internal class AuditFilterTest {
 
+    companion object {
+        private const val SUPPLIED_CORRELATION_ID = "a-generated-correlation-id"
+    }
+
     private val theRequest: HttpServletRequest = mock()
     private val theResponse: HttpServletResponse = mock()
     private val theChain: FilterChain = mock()
@@ -21,16 +25,26 @@ internal class AuditFilterTest {
 
     @BeforeEach
     internal fun setUp() {
-        this.auditFilter = AuditFilter()
+        this.auditFilter = AuditFilter { SUPPLIED_CORRELATION_ID }
     }
 
     @Test
-    internal fun `Should set the Correlation-ID given the request header is set`() {
+    internal fun `Should set the Correlation-Id given the request header is set`() {
         given(theRequest.getHeader("X-Correlation-Id")).willReturn("aCorrelationId")
 
         auditFilter.doFilter(theRequest, theResponse, theChain)
 
         assertThat(MDC.get("correlationId")).isEqualTo("aCorrelationId")
+        verify(theChain).doFilter(theRequest, theResponse)
+    }
+
+    @Test
+    internal fun `Should supply a Correlation-Id given the request header is not set`() {
+        given(theRequest.getHeader("X-Correlation-Id")).willReturn(null)
+
+        auditFilter.doFilter(theRequest, theResponse, theChain)
+
+        assertThat(MDC.get("correlationId")).isEqualTo(SUPPLIED_CORRELATION_ID)
         verify(theChain).doFilter(theRequest, theResponse)
     }
 }
