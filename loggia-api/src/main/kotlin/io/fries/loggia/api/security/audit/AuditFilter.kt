@@ -9,7 +9,16 @@ import javax.servlet.http.HttpServletResponse
 class AuditFilter(val supplyCorrelationId: () -> String) : OncePerRequestFilter() {
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
-        MDC.put("correlationId", request.getHeader("X-Correlation-Id") ?: supplyCorrelationId())
+        MDC.put("correlationId", correlationIdFrom(request))
         chain.doFilter(request, response)
+    }
+
+    private fun correlationIdFrom(request: HttpServletRequest): String {
+        val correlationId = request.getHeader("X-Correlation-Id")
+
+        return when {
+            correlationId.isNullOrBlank() -> supplyCorrelationId()
+            else -> correlationId
+        }
     }
 }

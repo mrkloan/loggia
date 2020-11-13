@@ -6,6 +6,8 @@ import com.nhaarman.mockito_kotlin.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.slf4j.MDC
 import javax.servlet.FilterChain
 import javax.servlet.http.HttpServletRequest
@@ -41,6 +43,17 @@ internal class AuditFilterTest {
     @Test
     internal fun `Should supply a Correlation-Id given the request header is not set`() {
         given(theRequest.getHeader("X-Correlation-Id")).willReturn(null)
+
+        auditFilter.doFilter(theRequest, theResponse, theChain)
+
+        assertThat(MDC.get("correlationId")).isEqualTo(SUPPLIED_CORRELATION_ID)
+        verify(theChain).doFilter(theRequest, theResponse)
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["", " ", "\n", "\r", "\t"])
+    internal fun `Should supply a Correlation-Id given the request header is blank`(blankHeader: String) {
+        given(theRequest.getHeader("X-Correlation-Id")).willReturn(blankHeader)
 
         auditFilter.doFilter(theRequest, theResponse, theChain)
 
