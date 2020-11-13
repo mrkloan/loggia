@@ -23,9 +23,9 @@ class AuditFilterIntegrationTest {
     private lateinit var mockMvc: MockMvc
 
     @Test
-    internal fun `Should set the Correlation-Id given the request header is set`() {
+    internal fun `Should set the Correlation-ID given the request header is set`() {
         mockMvc.get("/") {
-            header("X-Correlation-Id", "aCorrelationId")
+            header("X-Correlation-ID", "aCorrelationId")
         }
 
         verify(mdcWrapper).put("correlationId", "aCorrelationId")

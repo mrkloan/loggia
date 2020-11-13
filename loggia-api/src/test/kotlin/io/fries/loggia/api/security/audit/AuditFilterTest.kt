@@ -32,7 +32,7 @@ internal class AuditFilterTest {
     }
 
     @Test
-    internal fun `Should set the Correlation-Id given the request header is set`() {
+    internal fun `Should set the Correlation-ID given the request header is set`() {
         `given a request with a correlation header of`("aCorrelationId")
 
         `when the filter is triggered`()
@@ -42,7 +42,7 @@ internal class AuditFilterTest {
     }
 
     @Test
-    internal fun `Should supply a Correlation-Id given the request header is not set`() {
+    internal fun `Should supply a Correlation-ID given the request header is not set`() {
         `given a request without correlation header`()
 
         `when the filter is triggered`()
@@ -53,7 +53,7 @@ internal class AuditFilterTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["", " ", "\n", "\r", "\t"])
-    internal fun `Should supply a Correlation-Id given the request header is blank`(blankHeader: String) {
+    internal fun `Should supply a Correlation-ID given the request header is blank`(blankHeader: String) {
         `given a request with a correlation header of`(blankHeader)
 
         `when the filter is triggered`()
@@ -63,7 +63,7 @@ internal class AuditFilterTest {
     }
 
     @Test
-    internal fun `Should remove the Correlation-Id from MDC given the filter chain has been executed`() {
+    internal fun `Should remove the Correlation-ID from MDC given the filter chain has been executed`() {
         `given a request with a correlation header of`("aCorrelationId")
 
         `when the filter is triggered`()
@@ -73,7 +73,7 @@ internal class AuditFilterTest {
     }
 
     @Test
-    internal fun `Should remove the Correlation-Id from MDC given the filter chain has thrown`() {
+    internal fun `Should remove the Correlation-ID from MDC given the filter chain has thrown`() {
         `given a request with a correlation header of`("aCorrelationId")
         given(theChain.doFilter(theRequest, theResponse)).willThrow(RuntimeException())
 
@@ -84,7 +84,7 @@ internal class AuditFilterTest {
     }
 
     private fun `given a request without correlation header`() = `given a request with a correlation header of`(null)
-    private fun `given a request with a correlation header of`(correlationId: String?) = given(theRequest.getHeader("X-Correlation-Id")).willReturn(correlationId)
+    private fun `given a request with a correlation header of`(correlationId: String?) = given(theRequest.getHeader("X-Correlation-ID")).willReturn(correlationId)
 
     private fun `when the filter is triggered`() = auditFilter.doFilter(theRequest, theResponse, theChain)
 

@@ -13,7 +13,7 @@ class AuditFilter(
 ) : OncePerRequestFilter() {
 
     companion object {
-        private const val CORRELATION_HEADER = "X-Correlation-Id"
+        private const val CORRELATION_HEADER = "X-Correlation-ID"
         private const val CORRELATION_KEY = "correlationId"
     }
 
