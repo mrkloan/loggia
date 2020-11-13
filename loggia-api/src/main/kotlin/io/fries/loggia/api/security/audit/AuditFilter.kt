@@ -13,6 +13,7 @@ class AuditFilter(
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
         mdc.put("correlationId", correlationIdFrom(request))
         chain.doFilter(request, response)
+        mdc.remove("correlationId")
     }
 
     private fun correlationIdFrom(request: HttpServletRequest): String {

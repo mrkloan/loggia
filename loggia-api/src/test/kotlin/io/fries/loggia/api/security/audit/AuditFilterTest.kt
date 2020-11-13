@@ -60,4 +60,14 @@ internal class AuditFilterTest {
         verify(mdcWrapper).put("correlationId", SUPPLIED_CORRELATION_ID)
         verify(theChain).doFilter(theRequest, theResponse)
     }
+
+    @Test
+    internal fun `Should remove the Correlation-Id from MDC given the filter chain has been executed`() {
+        given(theRequest.getHeader("X-Correlation-Id")).willReturn("aCorrelationId")
+
+        auditFilter.doFilter(theRequest, theResponse, theChain)
+
+        verify(theChain).doFilter(theRequest, theResponse)
+        verify(mdcWrapper).remove("correlationId")
+    }
 }
