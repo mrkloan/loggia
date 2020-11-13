@@ -3,6 +3,7 @@ package io.fries.loggia.api.security.audit
 import com.nhaarman.mockitokotlin2.given
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -68,6 +69,17 @@ internal class AuditFilterTest {
         auditFilter.doFilter(theRequest, theResponse, theChain)
 
         verify(theChain).doFilter(theRequest, theResponse)
+        verify(mdcWrapper).remove("correlationId")
+    }
+
+    @Test
+    internal fun `Should remove the Correlation-Id from MDC given the filter chain has thrown`() {
+        given(theRequest.getHeader("X-Correlation-Id")).willReturn("aCorrelationId")
+        given(theChain.doFilter(theRequest, theResponse)).willThrow(RuntimeException())
+
+        assertThatExceptionOfType(RuntimeException::class.java)
+                .isThrownBy { auditFilter.doFilter(theRequest, theResponse, theChain) }
+
         verify(mdcWrapper).remove("correlationId")
     }
 }
