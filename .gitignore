@@ -1,6 +1,6 @@
 .idea
 *.iml
-
+logs
 target
 dist
 node
