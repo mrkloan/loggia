@@ -1,5 +1,7 @@
 package io.fries.loggia.api
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -25,12 +27,18 @@ class LoggiaConfiguration {
     fun securityContext(): SecurityContext = SecurityContextHolder.getContext()
 
     @Bean
+    fun clock(@Value("\${loggia.clock.timezone}") timezone: String): () -> ZonedDateTime = {
+        ZonedDateTime.now(ZoneId.of(timezone))
+    }
+
+    @Bean
     fun supplyCorrelationId(): () -> String = {
         UUID.randomUUID().toString()
     }
 
     @Bean
-    fun clock(@Value("\${loggia.clock.timezone}") timezone: String): () -> ZonedDateTime = {
-        ZonedDateTime.now(ZoneId.of(timezone))
-    }
+    fun auditLogger(): Logger = LoggerFactory.getLogger("audit-logger")
+
+    @Bean
+    fun stacktraceLogger(): Logger = LoggerFactory.getLogger("stacktrace-logger")
 }

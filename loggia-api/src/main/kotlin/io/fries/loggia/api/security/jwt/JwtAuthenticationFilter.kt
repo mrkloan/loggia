@@ -1,6 +1,7 @@
 package io.fries.loggia.api.security.jwt
 
 import io.jsonwebtoken.JwtException
+import org.slf4j.Logger
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
@@ -14,7 +15,8 @@ import javax.servlet.http.HttpServletResponse
 class JwtAuthenticationFilter(
         private val jwtUserDetailsService: JwtUserDetailsService,
         private val jwtService: JwtService,
-        private val securityContext: SecurityContext
+        private val securityContext: SecurityContext,
+        private val stacktraceLogger: Logger
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -35,8 +37,7 @@ class JwtAuthenticationFilter(
                 validateAuthentication(authorization.substring(BEARER_PREFIX.length), request)
             }
         } catch (e: JwtException) {
-            // TODO: use a proper logger
-            e.printStackTrace()
+            stacktraceLogger.error(e.message, e)
         }
     }
 
