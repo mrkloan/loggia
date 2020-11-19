@@ -32,7 +32,7 @@ internal class AuditFilterTest {
     }
 
     @Test
-    internal fun `Should set the Correlation-ID given the request header is set`() {
+    internal fun `Should set the Correlation-ID given the correlation header is set`() {
         `given a request with a correlation header of`("aCorrelationId")
 
         `when the filter is triggered`()
@@ -42,7 +42,7 @@ internal class AuditFilterTest {
     }
 
     @Test
-    internal fun `Should supply a Correlation-ID given the request header is not set`() {
+    internal fun `Should supply a Correlation-ID given the correlation header is not set`() {
         `given a request without correlation header`()
 
         `when the filter is triggered`()
@@ -53,7 +53,7 @@ internal class AuditFilterTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["", " ", "\n", "\r", "\t"])
-    internal fun `Should supply a Correlation-ID given the request header is blank`(blankHeader: String) {
+    internal fun `Should supply a Correlation-ID given the correlation header is blank`(blankHeader: String) {
         `given a request with a correlation header of`(blankHeader)
 
         `when the filter is triggered`()
