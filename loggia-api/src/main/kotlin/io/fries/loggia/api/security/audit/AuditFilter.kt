@@ -15,6 +15,7 @@ class AuditFilter(
     companion object {
         private const val CORRELATION_HEADER = "X-Correlation-ID"
         private const val CORRELATION_KEY = "correlationId"
+        private val CORRELATION_REGEX = Regex("[a-zA-Z0-9-_/]+")
     }
 
     override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
@@ -30,8 +31,10 @@ class AuditFilter(
         val correlationId = request.getHeader(CORRELATION_HEADER)
 
         return when {
-            correlationId.isNullOrBlank() -> supplyCorrelationId()
-            else -> correlationId
+            isValid(correlationId) -> correlationId
+            else -> supplyCorrelationId()
         }
     }
+
+    private fun isValid(correlationId: String?) = correlationId?.matches(CORRELATION_REGEX) ?: false
 }

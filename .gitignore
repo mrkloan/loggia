@@ -5,3 +5,4 @@ target
 dist
 node
 node_modules
+.jqwik-database
