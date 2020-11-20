@@ -16,5 +16,5 @@ $ ./mvnw clean test
 
 # Package and run
 $ ./mvnw clean install
-$ java -jar loggia-api/target/loggia-api-${version}-.jar
+$ java -jar loggia-api/target/loggia-api-${version}.jar
 ```
