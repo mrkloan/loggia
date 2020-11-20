@@ -1,8 +1,8 @@
 package io.fries.loggia.api.security.jwt
 
-import com.nhaarman.mockito_kotlin.given
-import com.nhaarman.mockito_kotlin.mock
-import io.fries.loggia.api.security.WebSecurityTestConfiguration
+import com.nhaarman.mockitokotlin2.given
+import com.nhaarman.mockitokotlin2.mock
+import io.fries.loggia.api.LoggiaTestConfiguration
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,8 +17,8 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 
 @ExtendWith(SpringExtension::class)
+@Import(LoggiaTestConfiguration::class)
 @WebMvcTest(JwtAuthenticationController::class)
-@Import(WebSecurityTestConfiguration::class)
 internal class JwtAuthenticationControllerTest {
 
     @Autowired

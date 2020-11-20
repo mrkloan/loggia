@@ -1,10 +1,12 @@
 package io.fries.loggia.api.security.jwt
 
-import com.nhaarman.mockito_kotlin.*
+import com.nhaarman.mockitokotlin2.*
+import io.jsonwebtoken.JwtException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
+import org.slf4j.Logger
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.context.SecurityContext
@@ -19,6 +21,7 @@ internal class JwtAuthenticationFilterTest {
     private val jwtUserDetailsService: JwtUserDetailsService = mock()
     private val jwtService: JwtService = mock()
     private val securityContext: SecurityContext = mock()
+    private val stacktraceLogger: Logger = mock()
 
     private val theRequest: HttpServletRequest = mock()
     private val theResponse: HttpServletResponse = mock()
@@ -28,14 +31,14 @@ internal class JwtAuthenticationFilterTest {
 
     @BeforeEach
     internal fun setUp() {
-        this.jwtAuthenticationFilter = JwtAuthenticationFilter(jwtUserDetailsService, jwtService, securityContext)
+        this.jwtAuthenticationFilter = JwtAuthenticationFilter(jwtUserDetailsService, jwtService, securityContext, stacktraceLogger)
     }
 
     @Test
     internal fun `Should validate the authentication given a valid token`() {
         val aUsername = "a-username"
         val someAuthorities = `given some authorities`()
-        `given a request with a valid authentication token for user`(aUsername, someAuthorities)
+        `given a request with a valid authorization token for user`(aUsername, someAuthorities)
 
         `when the filter is triggered`()
 
@@ -73,6 +76,16 @@ internal class JwtAuthenticationFilterTest {
         `then the next filter is triggered`()
     }
 
+    @Test
+    internal fun `Should log the exception given a malformed JWT token`() {
+        val jwtException = JwtException("Error message")
+        `given a request with a malformed token throwing`(jwtException)
+
+        `when the filter is triggered`()
+
+        `then the exception is logged`(jwtException)
+    }
+
     private fun `given some authorities`(): List<GrantedAuthority> {
         return listOf(
                 authorityOf("ROLE1"),
@@ -83,7 +96,7 @@ internal class JwtAuthenticationFilterTest {
 
     private fun authorityOf(authority: String): GrantedAuthority = GrantedAuthority { authority }
 
-    private fun `given a request with a valid authentication token for user`(username: String, authorities: List<GrantedAuthority>) {
+    private fun `given a request with a valid authorization token for user`(username: String, authorities: List<GrantedAuthority>) {
         val token = "valid-jwt-token"
         val userDetails = User(username, "password", authorities)
 
@@ -103,6 +116,11 @@ internal class JwtAuthenticationFilterTest {
 
     private fun `given a request with a non-bearer authorization header`() {
         given(theRequest.getHeader("Authorization")).willReturn("some-token")
+    }
+
+    private fun `given a request with a malformed token throwing`(jwtException: JwtException) {
+        given(theRequest.getHeader("Authorization")).willReturn("Bearer malformed-jwt-token")
+        given(jwtService.subjectOf("malformed-jwt-token")).willThrow(jwtException)
     }
 
     private fun `when the filter is triggered`() {
@@ -126,5 +144,9 @@ internal class JwtAuthenticationFilterTest {
 
     private fun `then the next filter is triggered`() {
         verify(theChain).doFilter(theRequest, theResponse)
+    }
+
+    private fun `then the exception is logged`(exception: Exception) {
+        verify(stacktraceLogger).error(exception.message, exception)
     }
 }

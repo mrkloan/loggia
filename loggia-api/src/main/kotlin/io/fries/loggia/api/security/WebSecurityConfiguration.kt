@@ -1,5 +1,6 @@
 package io.fries.loggia.api.security
 
+import io.fries.loggia.api.security.audit.AuditFilter
 import io.fries.loggia.api.security.jwt.JwtAuthenticationEntryPoint
 import io.fries.loggia.api.security.jwt.JwtAuthenticationFilter
 import io.fries.loggia.api.security.jwt.JwtUserDetailsService
@@ -19,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 class WebSecurityConfiguration(
+        private val auditFilter: AuditFilter,
         private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
         private val jwtUserDetailsService: JwtUserDetailsService,
         private val jwtAuthenticationFilter: JwtAuthenticationFilter
@@ -44,5 +46,6 @@ class WebSecurityConfiguration(
                 .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and()
                 .sessionManagement().sessionCreationPolicy(STATELESS).and()
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+                .addFilterBefore(auditFilter, JwtAuthenticationFilter::class.java)
     }
 }

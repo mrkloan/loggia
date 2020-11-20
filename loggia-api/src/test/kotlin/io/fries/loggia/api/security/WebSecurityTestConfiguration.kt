@@ -1,5 +1,6 @@
 package io.fries.loggia.api.security
 
+import io.fries.loggia.api.security.audit.MdcWrapper
 import io.fries.loggia.api.security.jwt.JwtAuthenticationEntryPoint
 import io.fries.loggia.api.security.jwt.JwtService
 import io.fries.loggia.api.security.jwt.JwtUserDetailsService
@@ -25,4 +26,7 @@ internal class WebSecurityTestConfiguration {
 
     @MockBean
     private lateinit var jwtService: JwtService
+
+    @MockBean
+    private lateinit var mdcWrapper: MdcWrapper
 }
