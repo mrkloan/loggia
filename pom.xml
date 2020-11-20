@@ -42,6 +42,7 @@
 
         <frontend-maven-plugin.version>1.9.1</frontend-maven-plugin.version>
         <frontend-maven-plugin.node.version>v14.2.0</frontend-maven-plugin.node.version>
+        <jacoco-maven-plugin.version>0.8.6</jacoco-maven-plugin.version>
         <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
     </properties>
 
@@ -91,6 +92,27 @@
     </dependencyManagement>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>
