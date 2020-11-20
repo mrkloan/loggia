@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletResponse
 internal class AuditFilterTest {
 
     companion object {
-        private const val SUPPLIED_CORRELATION_ID = "a-generated-correlation-id"
+        private const val SUPPLIED_CORRELATION_ID = "a-supplied-correlation-id"
     }
 
     private lateinit var mdcWrapper: MdcWrapper
