@@ -1,5 +1,6 @@
 # Loggia
-[![Pipeline](https://github.com/MrKloan/loggia/workflows/CI/badge.svg)](https://github.com/MrKloan/loggia/actions)
+[![CI](https://github.com/MrKloan/loggia/workflows/CI/badge.svg)](https://github.com/MrKloan/loggia/actions)
+[![Code coverage](https://codecov.io/gh/MrKloan/loggia/branch/master/graph/badge.svg)](https://codecov.io/gh/MrKloan/loggia)
 [![Unlicense](https://img.shields.io/github/license/MrKloan/loggia)](./UNLICENSE)
 
 > A *loggia* is a piece of architecture that opens up a building to the outside world.
@@ -15,5 +16,5 @@ $ ./mvnw clean test
 
 # Package and run
 $ ./mvnw clean install
-$ java -jar loggia-api/target/loggia-api-${version}-.jar
+$ java -jar loggia-api/target/loggia-api-${version}.jar
 ```
