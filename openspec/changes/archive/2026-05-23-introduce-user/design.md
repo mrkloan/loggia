@@ -45,7 +45,7 @@ Alternatives considered:
 
 Error mapping:
 - Header absent → `401 Unauthorized` + `{ "error": "Missing X-Vouch-User header" }`
-- Header present, value invalid → `403 Forbidden` + `{ "error": "<DomainError display string>" }`
+- Header present, value fails validation → `401 Unauthorized` + `{ "error": "Missing X-Vouch-User header" }`
 
 Alternatives considered:
 - _Tower middleware_: Would enforce on every route including `/health`, requiring explicit exclusions. Extractor-based enforcement is more composable and idiomatic in Axum.

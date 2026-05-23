@@ -31,7 +31,7 @@ All protected API endpoints SHALL require the `X-Vouch-User` HTTP request header
 
 #### Scenario: Request with a blank X-Vouch-User header value
 - **WHEN** a request is made to a protected endpoint with an `X-Vouch-User` header whose value is blank or whitespace-only
-- **THEN** the system returns `403 Forbidden` with body `{ "error": "<validation error message>" }`
+- **THEN** the system returns `401 Unauthorized` with body `{ "error": "Missing X-Vouch-User header" }`
 
 #### Scenario: Request with a valid X-Vouch-User header
 - **WHEN** a request is made to a protected endpoint with a non-blank `X-Vouch-User` header value
