@@ -3,7 +3,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use domain::ports::inbound::CheckHealthUseCase;
+use domain::health::check_health::CheckHealthUseCase;
 
 pub async fn handle(
     State(use_case): State<Arc<dyn CheckHealthUseCase>>,

@@ -2,8 +2,8 @@ mod http;
 
 use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
-use domain::services::health_service::HealthService;
-use sqlite::health_repository::SqliteHealthRepository;
+use domain::health::check_health::HealthService;
+use sqlite::health::SqliteHealthRepository;
 
 #[tokio::main]
 async fn main() {

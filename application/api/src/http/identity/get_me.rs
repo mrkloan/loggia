@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use crate::http::extractors::user::AuthenticatedUser;
+use crate::http::identity::authenticate::AuthenticatedUser;
 
 pub async fn handle(AuthenticatedUser(user): AuthenticatedUser) -> impl IntoResponse {
     (StatusCode::OK, Json(user))
@@ -14,8 +14,8 @@ mod tests {
     use axum::http::{Request, StatusCode};
     use axum::Router;
     use domain::errors::DomainResult;
-    use domain::models::system_health::SystemHealth;
-    use domain::ports::inbound::CheckHealthUseCase;
+    use domain::health::system_health::SystemHealth;
+    use domain::health::check_health::CheckHealthUseCase;
     use http_body_util::BodyExt;
     use tower::ServiceExt;
 

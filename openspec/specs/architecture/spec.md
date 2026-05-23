@@ -60,29 +60,38 @@ The project is managed as a multi-crate **Cargo Workspace** to enforce strict co
 
 ```
 loggia/
-├── Cargo.toml                  # Workspace root (registers all crates)
-├── domain/                     # Crate (Library): Business logic, Ports, and Services
+├── Cargo.toml                          # Workspace root (registers all crates)
+├── domain/                             # Crate (Library): Business logic, Ports, and Services
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs
-│       ├── errors.rs           # Core domain error types
-│       ├── models/             # Pure domain entities & value objects
-│       ├── ports/              # Trait definitions for use cases & repositories
-│       │   ├── inbound.rs      # Driving ports (Use Cases)
-│       │   └── outbound.rs     # Driven ports (Repositories)
-│       └── services/           # Concrete services implementing use cases
-├── infrastructure/             # Outbound Adapters Group
-│   └── db/                     # Crate (Library): SQLite database repository (SQLx)
+│       ├── errors.rs                   # Cross-cutting domain error types
+│       ├── health/                     # Health capability
+│       │   ├── mod.rs
+│       │   ├── system_health.rs        # SystemHealth entity
+│       │   └── check_health.rs         # CheckHealthUseCase + HealthRepository + HealthService
+│       └── identity/                   # Identity capability
+│           └── mod.rs                  # User entity
+├── infrastructure/                     # Outbound Adapters Group
+│   └── sqlite/                         # Crate (Library): SQLite database repository (SQLx)
 │       ├── Cargo.toml
 │       └── src/
-│           ├── lib.rs          # SQLx pools, configuration, and migrations
-│           └── migrations/     # SQL migration scripts (.sql)
-└── application/                # Inbound Delivery & Executables Group
-    └── api/                    # Crate (Binary): HTTP Web Server (Axum)
+│           ├── lib.rs                  # SQLx pools, configuration, and migrations
+│           ├── migrations/             # SQL migration scripts (.sql)
+│           └── health/                 # Health capability adapter
+│               └── check_health.rs     # SqliteHealthRepository
+└── application/                        # Inbound Delivery & Executables Group
+    └── api/                            # Crate (Binary): HTTP Web Server (Axum)
         ├── Cargo.toml
         └── src/
-            ├── main.rs         # HTTP Composition Root & Dependency Injection
-            └── http/           # HTTP Routing, handlers, and request DTOs
+            ├── main.rs                 # HTTP Composition Root & Dependency Injection
+            └── http/                   # HTTP Routing
+                ├── mod.rs              # Router composition
+                ├── health/             # Health capability
+                │   └── check_health.rs # GET /health handler
+                └── identity/           # Identity capability
+                    ├── authenticate.rs # AuthenticatedUser extractor (reusable)
+                    └── get_me.rs       # GET /me handler
 ```
 
 ---
@@ -102,14 +111,14 @@ These rules are enforced by Cargo's compilation pipeline. A violation will resul
                                  ▼                ▼
                   ┌────────────────────────┐    ┌────────────────────────┐
                   │    infrastructure/     │    │         domain         │
-                  │          (db)          │───▶│   (Core & Services)    │
+                  │        (sqlite)        │───▶│   (Core & Services)    │
                   └────────────────────────┘    └────────────────────────┘
 ```
 
 1. **`domain` Crate**:
    > [!IMPORTANT]
    > `domain` must remain completely isolated. It **cannot** declare dependencies on `infrastructure/db` or `application/api` in its `Cargo.toml`. It is a pure library.
-2. **`infrastructure/db` Crate**:
+2. **`infrastructure/sqlite` Crate**:
    * Depends **only** on `domain` (to access domain entities and outbound repository traits) and database crates (e.g. `sqlx`).
    * It **cannot** depend on `application/api`.
 3. **`application/api` Crate**:
@@ -135,17 +144,60 @@ The compilation dependencies between workspace members SHALL point strictly inwa
 - **THEN** it MUST succeed without importing any DB or API libraries
 
 ### Requirement: Core Ports and Services Placement
-All domain entities, inbound port use-case traits, outbound port repository traits, and application service orchestrators SHALL be co-located inside the `domain` library crate.
+All domain entities, inbound port use-case traits, outbound port repository traits, and application service orchestrators SHALL be co-located inside the `domain` library crate, organized into capability modules. Each capability module SHALL contain all artifacts belonging to that capability: its entity model(s), use case trait(s), outbound port trait(s), and service implementation(s).
 
 #### Scenario: Retrieve ports and services
 - **WHEN** another developer inspects the `domain` crate
 - **THEN** it SHALL contain all entities, use-case traits, repository traits, and services
+- **THEN** all artifacts for a single capability SHALL reside within the same capability module directory
+
+### Requirement: Use-case-first module organization
+All workspace crates SHALL organize their source code into capability modules rather than technical-layer directories. A capability module is a directory named after a business or cross-cutting concern (e.g. `health/`, `identity/`). Technical grouping directories (e.g. `models/`, `ports/`, `services/`, `extractors/`) SHALL NOT exist at any level within a crate.
+
+The sole exception is `errors.rs` in the `domain` crate, which SHALL remain a flat file at the crate root as a cross-cutting concern shared by all capabilities.
+
+#### Scenario: No technical-layer directories in domain
+- **WHEN** the `domain` crate source tree is inspected
+- **THEN** it SHALL NOT contain directories named `models`, `ports`, or `services`
+- **THEN** it SHALL contain only capability module directories and the flat `errors.rs` file alongside `lib.rs`
+
+#### Scenario: No technical-layer directories in infrastructure
+- **WHEN** the `infrastructure/sqlite` crate source tree is inspected
+- **THEN** it SHALL NOT contain flat repository files at the crate root (other than `lib.rs`)
+- **THEN** it SHALL organize persistence adapters into capability module directories
+
+#### Scenario: No technical-layer directories in application
+- **WHEN** the `application/api` crate source tree is inspected
+- **THEN** it SHALL NOT contain an `extractors/` directory or flat handler files under `http/`
+- **THEN** it SHALL organize handlers and request-scoped extractors into capability module directories under `http/`
+
+### Requirement: Action-oriented file naming within capability modules
+Files within a capability module SHALL be named after the action or entity they represent, not after their technical role. Names such as `use_case.rs`, `service.rs`, `repository.rs`, and `inbound.rs` are forbidden. The use case trait, outbound port trait, and service implementation for a given use case SHALL be co-located in a single file named after the action (e.g. `check_health.rs`). Domain entity files SHALL be named after the entity (e.g. `system_health.rs`).
+
+#### Scenario: Use case file is action-named
+- **WHEN** a developer adds a new use case to a capability module
+- **THEN** the file containing the use case trait, its outbound port(s), and service implementation SHALL be named after the action (e.g. `<verb>_<noun>.rs`)
+
+#### Scenario: No role-named files inside a capability
+- **WHEN** any capability module in any crate is inspected
+- **THEN** it SHALL NOT contain files named `use_case.rs`, `service.rs`, `repository.rs`, `inbound.rs`, or `outbound.rs`
+
+### Requirement: Capability naming symmetry across layers
+A capability that spans multiple crates SHALL use the same capability name in each crate. The `domain` capability name SHALL be the authoritative reference; `infrastructure` and `application` layers SHALL mirror it.
+
+#### Scenario: Health capability name is consistent across crates
+- **WHEN** the source trees of `domain`, `infrastructure/sqlite`, and `application/api` are inspected
+- **THEN** the health capability SHALL appear as `health/` in each crate that implements it
+
+#### Scenario: Identity capability name is consistent across layers
+- **WHEN** the source trees of `domain` and `application/api` are inspected
+- **THEN** the identity capability SHALL appear as `identity/` in both crates
 
 ### Requirement: Async SQLite Persistence Adapter
-The `infrastructure/db` crate SHALL implement an async SQLite persistence adapter using SQLx, which executes all database operations asynchronously and automatically runs SQL schema migrations on application startup.
+The `infrastructure/sqlite` crate SHALL implement an async SQLite persistence adapter using SQLx, which executes all database operations asynchronously and automatically runs SQL schema migrations on application startup.
 
 #### Scenario: Run startup migrations
-- **WHEN** the `infrastructure/db` adapter establishes a connection pool
+- **WHEN** the `infrastructure/sqlite` adapter establishes a connection pool
 - **THEN** it SHALL automatically run all migrations inside the migrations directory
 
 ### Requirement: API Executable and DI Composition Root
@@ -159,23 +211,32 @@ The `application/api` crate SHALL compile to an executable binary that uses Axum
 
 ## 5. Development Playbook: Adding a New Feature
 
-To ensure consistent code quality and architectural integrity, all contributors must follow this 5-step playbook when adding new business capabilities. 
+To ensure consistent code quality and architectural integrity, all contributors must follow this playbook when adding new business capabilities. Code is organized into **capability modules** — directories named after the business concern, not the technical role.
 
 As a running example, we illustrate adding a **"Create Product"** feature:
 
 ```
-   1. Domain Models         2. Domain Ports             3. App Service             4. DB Adapter             5. API Routing
- ┌──────────────────┐     ┌──────────────────┐        ┌──────────────────┐       ┌──────────────────┐      ┌──────────────────┐
- │ Define Product   │     │ Outbound: Repo   │        │ Implement Use    │       │ Implement SQL    │      │ Axum Handler &   │
- │ struct & errors  ├────▶│ Inbound: UseCase ├───────▶│ Case Service     ├──────▶│ query in infra/db├─────▶│ state-injection  │
- │ in `domain`      │     │ traits in `ports`│        │ using outbound   │       │ (SQLx)           │      │ in `application` │
- └──────────────────┘     └──────────────────┘        └──────────────────┘       └──────────────────┘      └──────────────────┘
+   1. Domain Capability         2. Infra Adapter              3. API Capability
+ ┌──────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+ │ domain/src/product/  │     │ sqlite/src/product/  │     │ http/product/        │
+ │                      │     │                      │     │                      │
+ │ product.rs           │     │ create_product.rs    │     │ create_product.rs    │
+ │  └ Product entity    │     │  └ SqliteProductRepo ├────▶│  └ Axum handler      │
+ │                      │     │    implements        │     │                      │
+ │ create_product.rs    │     │    ProductRepository │     │ main.rs              │
+ │  └ CreateProductUseCase    └──────────────────────┘     │  └ DI wiring         │
+ │  └ ProductRepository ├──────────────────────────────────│                      │
+ │  └ ProductService    │                                   └──────────────────────┘
+ └──────────────────────┘
 ```
 
-### Step 1: Define Domain Models & Errors
-Define the raw business struct and rules in `domain/src/models/` and any feature-specific errors in `domain/src/errors.rs`.
+### Step 1: Create the capability module in `domain`
+Create a directory `domain/src/product/`. Inside it, add:
+- An **entity file** named after the model (e.g. `product.rs`) with the domain struct and its invariants.
+- An **action file** named after the use case (e.g. `create_product.rs`) containing the inbound port trait, outbound port trait(s), and the service implementation.
+
 ```rust
-// domain/src/models/product.rs
+// domain/src/product/product.rs
 pub struct Product {
     pub id: String,
     pub name: String,
@@ -187,42 +248,27 @@ impl Product {
         if name.trim().is_empty() {
             return Err(DomainError::Validation("Product name cannot be empty".into()));
         }
-        Ok(Self {
-            id: uuid::Uuid::new_v4().to_string(),
-            name,
-            price,
-        })
+        Ok(Self { id: uuid::Uuid::new_v4().to_string(), name, price })
     }
 }
 ```
 
-### Step 2: Define Ports (Interfaces)
-Establish the interface requirements in the `domain/src/ports/` directory.
-
 ```rust
-// domain/src/ports/outbound.rs (Driven Port)
+// domain/src/product/create_product.rs
+
+// Outbound port (driven)
 #[async_trait::async_trait]
 pub trait ProductRepository: Send + Sync {
     async fn save(&self, product: &Product) -> Result<(), DomainError>;
 }
 
-// domain/src/ports/inbound.rs (Driving Port / Use Case)
+// Inbound port (driving / use case)
 #[async_trait::async_trait]
 pub trait CreateProductUseCase: Send + Sync {
     async fn execute(&self, name: String, price: u64) -> Result<Product, DomainError>;
 }
-```
 
-### Step 3: Implement the Service
-Write the application service coordinating the ports in `domain/src/services/`. Note that it accepts the repo as a dynamic trait reference wrapped in an `Arc`.
-
-```rust
-// domain/src/services/product_service.rs
-use std::sync::Arc;
-use crate::models::product::Product;
-use crate::ports::outbound::ProductRepository;
-use crate::ports::inbound::CreateProductUseCase;
-
+// Service implementation
 pub struct ProductService {
     product_repo: Arc<dyn ProductRepository>,
 }
@@ -243,16 +289,21 @@ impl CreateProductUseCase for ProductService {
 }
 ```
 
-### Step 4: Implement Database Persistence (Infrastructure)
-Implement the outbound port inside the SQLite `infrastructure/db` crate.
+Declare the module in `domain/src/lib.rs`:
+```rust
+pub mod product;
+```
+
+### Step 2: Implement the database adapter in `infrastructure/sqlite`
+Create `infrastructure/sqlite/src/product/create_product.rs` with the SQLx implementation of `ProductRepository`.
 
 ```rust
-// infrastructure/db/src/product_repository.rs
-use domain::models::product::Product;
-use domain::ports::outbound::ProductRepository;
+// infrastructure/sqlite/src/product/create_product.rs
+use domain::product::create_product::ProductRepository;
+use domain::product::product::Product;
 
 pub struct SqliteProductRepository {
-    pool: sqlx::SqlitePool,
+    pool: Arc<sqlx::SqlitePool>,
 }
 
 #[async_trait::async_trait]
@@ -262,34 +313,47 @@ impl ProductRepository for SqliteProductRepository {
             "INSERT INTO products (id, name, price) VALUES (?, ?, ?)",
             product.id, product.name, product.price
         )
-        .execute(&self.pool)
+        .execute(self.pool.as_ref())
         .await
-        .map_err(|e| DomainError::Database(e.to_string()))?;
-        Ok(())
+        .map(|_| ())
+        .map_err(|e| DomainError::Database(e.to_string()))
     }
 }
 ```
 
-### Step 5: Wire Dependency Injection & HTTP routing (Application)
-Expose the capability as an HTTP route in `application/api` by extracting the state container.
+Declare the module in `infrastructure/sqlite/src/lib.rs`:
+```rust
+pub mod product;
+```
+
+### Step 3: Implement the HTTP handler in `application/api`
+Create `application/api/src/http/product/create_product.rs` with the Axum handler. The `AuthenticatedUser` extractor from `http::identity::authenticate` can be imported directly for any protected endpoint.
 
 ```rust
-// application/api/src/http/product.rs
-async fn create_product(
+// application/api/src/http/product/create_product.rs
+use axum::{extract::State, Json, http::StatusCode, response::IntoResponse};
+use std::sync::Arc;
+use domain::product::create_product::CreateProductUseCase;
+
+pub async fn handle(
     State(use_case): State<Arc<dyn CreateProductUseCase>>,
     Json(payload): Json<CreateProductRequest>,
 ) -> impl IntoResponse {
     let product = use_case.execute(payload.name, payload.price).await?;
     (StatusCode::CREATED, Json(product))
 }
+```
 
+### Step 4: Wire dependency injection in `main.rs`
+Instantiate the repository, inject it into the service, and mount the route in the composition root.
+
+```rust
 // application/api/src/main.rs (Composition Root)
-let pool = db::establish_connection("sqlite:loggia.db").await?;
-let product_repo = Arc::new(db::SqliteProductRepository::new(pool));
-let product_service = Arc::new(domain::services::ProductService::new(product_repo));
+let product_repo = Arc::new(sqlite::product::SqliteProductRepository::new(pool.clone()));
+let product_service = Arc::new(domain::product::ProductService::new(product_repo));
 
 let app = Router::new()
-    .route("/products", post(create_product))
+    .route("/products", post(http::product::create_product::handle))
     .with_state(product_service as Arc<dyn CreateProductUseCase>);
 ```
 
@@ -303,7 +367,7 @@ Test-driven design is heavily facilitated by this architecture.
 Since the `domain` services rely strictly on ports, you can test all core logic without spinning up a real database. We use manual lightweight test doubles or `mockall` for repository traits.
 
 ```rust
-// domain/src/services/product_service_tests.rs
+// domain/src/product/create_product.rs (tests module)
 struct InMemoryProductRepo {
     products: Mutex<Vec<Product>>,
 }
@@ -328,4 +392,4 @@ async fn test_create_product_success() {
 ```
 
 ### Database Integration Testing
-Place integration tests that verify database adapters inside the `infrastructure/db` crate, utilizing an in-memory SQLite database (`sqlite::memory:`) to keep tests fast, isolated, and parallelized.
+Place integration tests that verify database adapters inside the `infrastructure/sqlite` crate, utilizing an in-memory SQLite database (`sqlite::memory:`) to keep tests fast, isolated, and parallelized.

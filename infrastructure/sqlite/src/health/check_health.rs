@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use sqlx::SqlitePool;
 use domain::errors::{DomainError, DomainResult};
-use domain::ports::outbound::HealthRepository;
+use domain::health::check_health::HealthRepository;
 
 pub struct SqliteHealthRepository {
     pool: Arc<SqlitePool>,

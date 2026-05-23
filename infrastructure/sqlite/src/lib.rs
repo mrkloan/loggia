@@ -1,4 +1,4 @@
-pub mod health_repository;
+pub mod health;
 
 use sqlx::SqlitePool;
 use sqlx::sqlite::SqlitePoolOptions;

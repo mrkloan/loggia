@@ -4,7 +4,7 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use domain::models::user::User;
+use domain::identity::User;
 
 pub struct AuthenticatedUser(pub User);
 
