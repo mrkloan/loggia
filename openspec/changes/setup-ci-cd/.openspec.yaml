@@ -1,0 +1,5 @@
+name: setup-ci-cd
+title: Setup CI/CD with GitHub Actions
+description: "Automate tests on branches; build and publish a production Docker image for application/api to GHCR on main; publish api crate docs to GitHub Pages."
+apply:
+  requires: ["proposal","design","tasks"]
