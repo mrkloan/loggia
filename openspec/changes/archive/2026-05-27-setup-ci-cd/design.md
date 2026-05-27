@@ -23,11 +23,14 @@ permissions:
 ```
 
 ## SQLite bundled feature
-Add `sqlite-bundled` to the workspace sqlx features:
+
+> [!CAUTION]
+> **Post-implementation erratum:** `sqlite-bundled` is **not** a valid sqlx 0.7 feature and causes a build failure. In sqlx 0.7, the `sqlite` feature already statically bundles SQLite by default (via `libsqlite3-sys` with `bundled`). No additional feature flag is needed. The correct dependency line is shown below.
+
 ```toml
-sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "sqlite-bundled", "macros"] }
+sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "macros"] }
 ```
-This statically compiles SQLite into the binary, removing the runtime dependency on `libsqlite3`. Required for the distroless runtime image which has no system libraries. Also eliminates the need for `libsqlite3-dev` in the Docker builder stage.
+The `sqlite` feature statically compiles SQLite into the binary, removing the runtime dependency on `libsqlite3`. Required for the distroless runtime image which has no system libraries. Also eliminates the need for `libsqlite3-dev` in the Docker builder stage.
 
 ## Docker image
 - Registry: ghcr.io (GitHub Container Registry)
@@ -72,7 +75,7 @@ EXPOSE 8080
 CMD ["/usr/local/bin/api"]
 ```
 Notes:
-- No `apt-get install` needed: `sqlite-bundled` compiles SQLite from C source using the C compiler already present in the `rust:1.95.0` image; no system `libsqlite3-dev` or `libssl-dev` required.
+- No `apt-get install` needed: sqlx's `sqlite` feature bundles and compiles SQLite from C source using the C compiler already present in the `rust:1.95.0` image; no system `libsqlite3-dev` or `libssl-dev` required.
 - The split COPY pattern caches the dependency build layer — only a `Cargo.toml` or `Cargo.lock` change triggers a full dependency rebuild.
 - Runtime uses distroless to minimize image size (~20MB) and attack surface. Trade-off: no shell for debugging; all runtime libraries must be present or statically linked.
 

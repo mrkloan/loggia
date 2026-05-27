@@ -24,7 +24,7 @@ async fn main() {
 
     let app = http::router(health_service);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await
         .expect("Failed to bind TCP listener");
 
