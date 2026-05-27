@@ -1,0 +1,19 @@
+# Avoid copying the cargo build target directory
+target/
+
+# Avoid copying local git and VCS directories
+.git/
+.github/
+
+# Avoid copying local editor and agent settings
+.vscode/
+.idea/
+.agent/
+
+# Avoid copying local SQLite databases and their temporary files
+*.db
+*.db-journal
+*.db-wal
+
+# Avoid copying local build logs
+*.log
