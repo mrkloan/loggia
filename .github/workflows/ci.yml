@@ -70,6 +70,20 @@ jobs:
       - name: Generate docs
         run: cargo doc --workspace --no-deps --release
 
+      - name: Create index redirect
+        run: |
+          cat > target/doc/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+          <meta http-equiv="refresh" content="0; url=api/" />
+          </head>
+          <body>
+          <p>Redirecting to <a href="api/">API documentation</a>...</p>
+          </body>
+          </html>
+          EOF
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
