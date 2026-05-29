@@ -1,3 +1,26 @@
+//! # API Application Layer
+//!
+//! This crate is the **application layer** (driving adapter) in Hexagonal Architecture.
+//! It orchestrates the interaction between external drivers (HTTP) and the domain layer.
+//!
+//! ## Architecture Role
+//!
+//! The application layer:
+//! - Receives external requests (HTTP, CLI, messages)
+//! - Coordinates use cases from the domain layer
+//! - Delegates to infrastructure adapters for persistence and external services
+//! - Translates between external formats (HTTP JSON) and domain types
+//!
+//! ## Dependencies
+//!
+//! - `domain`: For business logic and use cases
+//! - `sqlite`: For SQLite persistence adapter
+//! - `axum`: For HTTP server and routing
+//! - `tokio`: For async runtime
+//! - `tracing`: For observability and logging
+
+#![deny(missing_docs)]
+
 mod http;
 
 use std::sync::Arc;
@@ -5,6 +28,31 @@ use tracing_subscriber::EnvFilter;
 use domain::health::check_health::HealthService;
 use sqlite::health::SqliteHealthRepository;
 
+/// Application entry point.
+///
+/// This function:
+/// 1. Initializes the tracing/observability subsystem
+/// 2. Establishes the database connection pool
+/// 3. Wires up the domain services with infrastructure adapters
+/// 4. Configures the HTTP router
+/// 5. Starts the HTTP server
+///
+/// # Environment Variables
+///
+/// - `DATABASE_URL`: SQLite database URL (default: "sqlite:loggia.db")
+/// - `RUST_LOG`: Logging level (controlled by tracing-subscriber)
+///
+/// # Design Rationale
+///
+/// The main function follows the **dependency injection** pattern:
+/// - Domain services depend on traits (ports), not concrete implementations
+/// - Infrastructure adapters implement those traits
+/// - The composition root (this function) wires everything together
+///
+/// This ensures that:
+/// - Domain logic remains independent of infrastructure
+/// - Testing can use mock implementations
+/// - Configuration changes don't require code changes
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
