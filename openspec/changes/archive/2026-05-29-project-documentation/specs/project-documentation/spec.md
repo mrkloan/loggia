@@ -1,18 +1,23 @@
 ## ADDED Requirements
 
 ### Requirement: Workspace README.md Overview and Contributing Guidelines
-The workspace root SHALL contain a `README.md` file that provides a high-level overview of the `loggia` project. It MUST describe the Hexagonal (Ports & Adapters) architecture, layer relationships, workspace directory structure, and provide simple, actionable contribution guidelines for developers.
+The workspace root SHALL contain a `README.md` file that provides a high-level overview of the `loggia` project. It MUST describe the Hexagonal (Ports & Adapters) architecture, layer relationships, and provide simple, actionable contribution guidelines for developers. The README SHALL start with badges for CI status and project documentation, followed by the project's catch phrase "A loggia is a piece of architecture that opens up a building to the outside world." in a citation block. The README SHALL reference the UNLICENSE at <https://unlicense.org/> in its License section.
 
 #### Scenario: Workspace README contains essential sections
 - **WHEN** the `README.md` at the workspace root is read
+- **THEN** it SHALL start with a CI badge: [![CI](https://github.com/mrkloan/loggia/actions/workflows/ci.yml/badge.svg)](https://github.com/mrkloan/loggia/actions/workflows/ci.yml)
+- **THEN** it SHALL contain a documentation badge: [![Documentation](https://img.shields.io/badge/docs-mrkloan.github.io/loggia-blue)](https://mrkloan.github.io/loggia/)
+- **THEN** it SHALL start with a citation block containing "A loggia is a piece of architecture that opens up a building to the outside world."
 - **THEN** it SHALL contain an "Overview" section outlining Hexagonal Architecture
-- **THEN** it SHALL contain a "Directory Layout" section explaining crate boundaries
+- **THEN** it SHALL contain a note in the Overview section about the specification-driven workflow using OpenSpec
+- **THEN** it SHALL reference `openspec/specs/` as the canonical source of truth for all project specifications
 - **THEN** it SHALL contain a "Contributing Guidelines" section detailing how to add new features or run tests
 - **THEN** it SHALL link directly to the formal architecture and capability specifications in `openspec/specs/` instead of duplicating their requirements or detailed design
+- **THEN** it SHALL contain a "License" section that references the [UNLICENSE](https://unlicense.org/)
 
 
 ### Requirement: Rust Documentation Exhaustiveness
-All production crates in the workspace (`domain`, `sqlite`, `api`) MUST enforce that all public items (modules, traits, structs, enums, functions, and methods) are documented. This SHALL be enforced at compile time using crate-level lints.
+All production Rust crates in the workspace MUST enforce that all public items (modules, traits, structs, enums, functions, and methods) are documented. This SHALL be enforced at compile time using crate-level lints.
 
 #### Scenario: Compilation fails when a public item is undocumented
 - **WHEN** a contributor defines a new public module, struct, trait, or function without doc comments

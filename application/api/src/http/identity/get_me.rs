@@ -1,8 +1,46 @@
+//! Get current authenticated user endpoint.
+//!
+//! This module contains the HTTP handler for retrieving the current user's identity.
+
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use crate::http::identity::authenticate::AuthenticatedUser;
 
+/// HTTP handler for the "get me" endpoint.
+///
+/// Returns the authenticated user's information as JSON.
+///
+/// # Request
+///
+/// - Method: GET
+/// - Path: /me
+/// - Headers: Requires `X-Vouch-User` header for authentication
+///
+/// # Responses
+///
+/// - `200 OK`: Authentication succeeded, returns user information as JSON
+/// - `401 Unauthorized`: Authentication failed (handled by the `AuthenticatedUser` extractor)
+///
+/// # Example
+///
+/// ```bash
+/// curl -H "X-Vouch-User: alice" http://localhost:8080/me
+/// ```
+///
+/// Response:
+/// ```json
+/// {
+///   "username": "alice"
+/// }
+/// ```
+///
+/// # Design Rationale
+///
+/// This handler is intentionally simple because:
+/// - Authentication is handled by the `AuthenticatedUser` extractor
+/// - The domain `User` entity already guarantees valid data
+/// - There's no additional business logic needed - just return what we have
 pub async fn handle(AuthenticatedUser(user): AuthenticatedUser) -> impl IntoResponse {
     (StatusCode::OK, Json(user))
 }
@@ -10,28 +48,39 @@ pub async fn handle(AuthenticatedUser(user): AuthenticatedUser) -> impl IntoResp
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+    use async_trait::async_trait;
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
     use axum::Router;
     use domain::errors::DomainResult;
-    use domain::health::system_health::SystemHealth;
     use domain::health::check_health::CheckHealthUseCase;
+    use domain::health::system_health::SystemHealth;
     use http_body_util::BodyExt;
     use tower::ServiceExt;
 
+    /// Mock implementation of `CheckHealthUseCase` for testing.
+    ///
+    /// Returns a successful health check result with all systems operational.
     struct MockHealthUseCase;
 
-    #[async_trait::async_trait]
+    #[async_trait]
     impl CheckHealthUseCase for MockHealthUseCase {
         async fn execute(&self) -> DomainResult<SystemHealth> {
             Ok(SystemHealth::new("OK".to_string(), true, 0))
         }
     }
 
+    /// Creates a test router with the mock health use case.
+    ///
+    /// This is used to test HTTP handlers in isolation without requiring
+    /// a real database connection.
     fn test_router() -> Router {
         crate::http::router(Arc::new(MockHealthUseCase))
     }
 
+    /// Helper function to extract JSON body from a response.
+    ///
+    /// Collects the response body and parses it as JSON.
     async fn body_json(body: Body) -> serde_json::Value {
         let bytes = body.collect().await.unwrap().to_bytes();
         serde_json::from_slice(&bytes).unwrap()
