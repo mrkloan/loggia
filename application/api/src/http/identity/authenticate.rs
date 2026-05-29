@@ -3,7 +3,6 @@
 //! This module provides the authentication extractor that validates
 //! user identity from HTTP request headers.
 
-use async_trait::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::StatusCode;
@@ -47,7 +46,6 @@ pub struct AuthenticatedUser(pub User);
 /// - Allows for flexible authentication strategies (OAuth, SAML, etc.)
 /// - Keeps the application stateless
 /// - Makes the application easier to test (headers can be mocked)
-#[async_trait]
 impl<S> FromRequestParts<S> for AuthenticatedUser
 where
     S: Send + Sync,
