@@ -6,8 +6,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     labels:
-      - "dependencies"
-      - "rust"
+      - "dependencies:rust"
     reviewers:
       - "mrkloan"
     commit-message:
@@ -24,8 +23,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 5
     labels:
-      - "dependencies"
-      - "github-actions"
+      - "dependencies:github-actions"
     reviewers:
       - "mrkloan"
     commit-message:
