@@ -49,6 +49,8 @@ jobs:
           context: .
           file: application/api/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ github.repository_owner }}/loggia-api:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/loggia-api:latest
