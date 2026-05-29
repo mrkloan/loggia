@@ -17,8 +17,6 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-    merge-policy: "squash"
-    auto-merge: true
 
   - package-ecosystem: "github-actions"
     directory: "/.github/workflows"
@@ -34,5 +32,3 @@ updates:
       prefix: "chore"
       prefix-development: "chore(deps)"
       include: "scope"
-    merge-policy: "squash"
-    auto-merge: true
