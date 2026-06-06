@@ -5,13 +5,14 @@ WORKDIR /usr/src
 # Copy root manifest and lock file first for dependency layer caching
 COPY Cargo.toml Cargo.lock ./
 
-# Copy all Cargo.toml files from workspace members
-# Using wildcard to ensure any new crate added will be included
-COPY */Cargo.toml ./
+# Copy all Cargo.toml files from workspace members at any depth
+# Using explicit paths to ensure all current and future crates are included
+COPY */Cargo.toml ./ 
+COPY */*/Cargo.toml ./ 
 
 # Create stub source files for all crates with Cargo.toml
 # This dynamically finds all Cargo.toml files (except root) and creates appropriate stubs
-RUN find . -maxdepth 2 -name "Cargo.toml" ! -path "./Cargo.toml" -exec dirname {} \; | while read -r crate_dir; do \
+RUN find . -name "Cargo.toml" ! -path "./Cargo.toml" -exec dirname {} \; | while read -r crate_dir; do \
     src_dir="$crate_dir/src"; \
     mkdir -p "$src_dir"; \
     # Check if the crate path contains "api" (binary crate)
@@ -22,9 +23,8 @@ RUN find . -maxdepth 2 -name "Cargo.toml" ! -path "./Cargo.toml" -exec dirname {
     fi; \
 done
 
-# Build all workspace dependencies (this layer is cached unless Cargo.toml/Cargo.lock change)
-# Using --workspace ensures all current and future workspace members are built
-RUN cargo build --release --workspace
+# Build dependencies (this layer is cached unless Cargo.toml/Cargo.lock change)
+RUN cargo build --release --package api
 
 # Copy actual source code
 COPY . .
@@ -32,7 +32,7 @@ COPY . .
 # Rebuild with real sources (only our code recompiles, dependencies are cached)
 # Touch all source files to ensure they're rebuilt with real code
 RUN find . -name "*.rs" -not -path "./target/*" -exec touch {} + && \
-    cargo build --release --workspace
+    cargo build --release --package api
 
 # runtime stage (distroless — minimal, production-focused)
 FROM gcr.io/distroless/cc-debian12
