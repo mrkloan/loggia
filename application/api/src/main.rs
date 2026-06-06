@@ -26,7 +26,7 @@ mod http;
 use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 use domain::health::check_health::HealthService;
-use domain::identity::provider::IdentityProviderRef;
+use domain::identity::provider::ValidateIdentityUseCase;
 use sqlite::health::SqliteHealthRepository;
 use vouch::VouchIdentityProvider;
 
@@ -40,14 +40,14 @@ pub struct AppState {
     /// The health check use case from the domain layer.
     pub health_use_case: Arc<dyn domain::health::check_health::CheckHealthUseCase>,
     /// The identity provider for validating identity tokens.
-    pub identity_provider: IdentityProviderRef,
+    pub identity_provider: ValidateIdentityUseCase,
 }
 
 impl AppState {
     /// Creates a new `AppState` with the given services.
     pub fn new(
         health_use_case: Arc<dyn domain::health::check_health::CheckHealthUseCase>,
-        identity_provider: IdentityProviderRef,
+        identity_provider: ValidateIdentityUseCase,
     ) -> Self {
         Self {
             health_use_case,
@@ -99,7 +99,7 @@ async fn main() {
     let health_service = Arc::new(HealthService::new(health_repo));
 
     // Create identity provider
-    let identity_provider: IdentityProviderRef = Arc::new(
+    let identity_provider: ValidateIdentityUseCase = Arc::new(
         VouchIdentityProvider::new()
             .expect("Failed to create VouchIdentityProvider: invalid configuration"),
     );

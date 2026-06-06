@@ -91,10 +91,10 @@ mod tests {
     fn test_router() -> Router {
         use std::sync::Arc;
         use crate::AppState;
-        use domain::identity::provider::IdentityProviderRef;
+        use domain::identity::provider::ValidateIdentityUseCase;
         
         let health_use_case = Arc::new(MockHealthUseCase);
-        let identity_provider: IdentityProviderRef = Arc::new(MockIdentityProvider);
+        let identity_provider: ValidateIdentityUseCase = Arc::new(MockIdentityProvider);
         let app_state = AppState::new(health_use_case, identity_provider);
         crate::http::router(app_state)
     }

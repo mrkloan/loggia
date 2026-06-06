@@ -53,4 +53,4 @@ pub trait IdentityProvider: Send + Sync {
 /// Type alias for a boxed, thread-safe identity provider.
 ///
 /// This type is used for storing providers in application state.
-pub type IdentityProviderRef = Arc<dyn IdentityProvider + Send + Sync>;
+pub type ValidateIdentityUseCase = Arc<dyn IdentityProvider + Send + Sync>;
