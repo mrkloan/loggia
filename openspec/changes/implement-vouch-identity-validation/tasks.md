@@ -51,3 +51,19 @@
 - [x] 8.3 Test `/health` endpoint is accessible without authentication
 - [x] 8.4 Test `/me` endpoint returns 401 without `X-Identity-Token` header
 - [x] 8.5 Test `/me` endpoint returns 401 with invalid `X-Identity-Token` header
+
+## 9. Unit Tests for VouchIdentityProvider
+
+- [x] 9.1 Add `mockito` dev-dependency to `infrastructure/vouch/Cargo.toml`
+- [x] 9.2 Add test helper `VouchIdentityProvider::new_test()` for creating test instances
+- [x] 9.3 Add test for successful token validation with user header
+- [x] 9.4 Add test for successful validation with trimmed username
+- [x] 9.5 Add test for missing `X-Vouch-User` header error
+- [x] 9.6 Add test for empty `X-Vouch-User` header error
+- [x] 9.7 Add test for 401 Unauthorized response
+- [x] 9.8 Add test for 500 server error response
+- [x] 9.9 Add test for 404 Not Found response
+- [x] 9.10 Add test for correct cookie header formatting
+- [x] 9.11 Add test for correct Host header
+- [x] 9.12 Add test for connection error handling
+- [x] 9.13 Run all vouch tests to verify implementation

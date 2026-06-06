@@ -209,23 +209,19 @@ impl IdentityProvider for VouchIdentityProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+    use mockito::Server;
 
-    /// Creates a test VouchIdentityProvider with mockable configuration.
+    /// Creates a test VouchIdentityProvider with a custom client and endpoint.
     ///
     /// For testing purposes, this allows creating a provider with arbitrary
-    /// endpoint, cookie name, and domain.
+    /// endpoint, cookie name, domain, and HTTP client.
     impl VouchIdentityProvider {
         pub fn new_test(
             endpoint: String,
             cookie_name: String,
             domain: String,
+            client: reqwest::Client,
         ) -> Result<Self, String> {
-            let client = reqwest::Client::builder()
-                .timeout(std::time::Duration::from_secs(1))
-                .build()
-                .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
             Ok(Self {
                 endpoint,
                 cookie_name,
@@ -233,12 +229,24 @@ mod tests {
                 client,
             })
         }
+
+        /// Creates a test provider with a custom endpoint and default test client.
+        pub fn with_endpoint(endpoint: String) -> Result<Self, String> {
+            let client = reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(1))
+                .build()
+                .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+            Self::new_test(
+                endpoint,
+                DEFAULT_VOUCH_COOKIE.to_string(),
+                DEFAULT_VOUCH_DOMAIN.to_string(),
+                client,
+            )
+        }
     }
 
     #[test]
     fn new_with_defaults() {
-        // Test that new() creates a provider with default values
-        // Note: We can't easily clear env vars in tests, so we just verify the defaults exist
         let _provider = VouchIdentityProvider::new().unwrap();
         assert_eq!(DEFAULT_VOUCH_ENDPOINT, "http://vouch-proxy:9090/validate");
         assert_eq!(DEFAULT_VOUCH_COOKIE, "VouchCookie");
@@ -247,12 +255,12 @@ mod tests {
 
     #[test]
     fn new_with_custom_values() {
-        // Test that new() respects custom environment variables
-        // We use the test helper new_test() instead
+        let client = reqwest::Client::new();
         let provider = VouchIdentityProvider::new_test(
             "http://custom:8080/validate".to_string(),
             "CustomCookie".to_string(),
             "custom.example.com".to_string(),
+            client,
         )
         .unwrap();
         assert_eq!(provider.endpoint(), "http://custom:8080/validate");
@@ -262,14 +270,219 @@ mod tests {
 
     #[test]
     fn new_with_invalid_endpoint() {
-        // Test that new() returns error for invalid endpoint URL
-        let result = VouchIdentityProvider::new_test(
-            "not-a-valid-url".to_string(),
-            "cookie".to_string(),
-            "domain".to_string(),
-        );
-        // The new_test() method doesn't validate the URL, but we can test the URL parsing directly
-        let url_result = url::Url::parse("not-a-valid-url");
-        assert!(url_result.is_err());
+        let result = url::Url::parse("not-a-valid-url");
+        assert!(result.is_err());
+    }
+
+    /// Helper to run async code in a tokio runtime
+    fn run_async<'a, F, R>(future: F) -> R
+    where
+        F: std::future::Future<Output = R> + Send + 'a,
+        R: Send + 'a,
+    {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to create runtime");
+        rt.block_on(future)
+    }
+
+    #[test]
+    fn validate_token_success_with_user_header() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(200)
+            .with_header("X-Vouch-User", "alice")
+            .create();
+
+        let provider = VouchIdentityProvider::with_endpoint(server.url() + "/validate").unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_ok());
+        let user = result.unwrap();
+        assert_eq!(user.username(), "alice");
+    }
+
+    #[test]
+    fn validate_token_success_with_trimmed_username() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(200)
+            .with_header("X-Vouch-User", "  alice  ")
+            .create();
+
+        let provider = VouchIdentityProvider::with_endpoint(server.url() + "/validate").unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_ok());
+        let user = result.unwrap();
+        assert_eq!(user.username(), "alice");
+    }
+
+    #[test]
+    fn validate_token_missing_user_header() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(200)
+            .create();
+
+        let provider = VouchIdentityProvider::with_endpoint(server.url() + "/validate").unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), DomainError::Validation(_)));
+    }
+
+    #[test]
+    fn validate_token_missing_user_header_empty_value() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(200)
+            .with_header("X-Vouch-User", "")
+            .create();
+
+        let provider = VouchIdentityProvider::with_endpoint(server.url() + "/validate").unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), DomainError::Validation(_)));
+    }
+
+    #[test]
+    fn validate_token_unauthorized() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(401)
+            .create();
+
+        let provider = VouchIdentityProvider::with_endpoint(server.url() + "/validate").unwrap();
+
+        let result = run_async(provider.validate_token("invalid-token".to_string()));
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), DomainError::Authentication(_)));
+    }
+
+    #[test]
+    fn validate_token_server_error() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(500)
+            .with_body("Internal Server Error")
+            .create();
+
+        let provider = VouchIdentityProvider::with_endpoint(server.url() + "/validate").unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), DomainError::PartnerUnavailable(_)));
+    }
+
+    #[test]
+    fn validate_token_not_found() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(404)
+            .create();
+
+        let provider = VouchIdentityProvider::with_endpoint(server.url() + "/validate").unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), DomainError::PartnerUnavailable(_)));
+    }
+
+    #[test]
+    fn validate_token_sends_correct_cookie() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(200)
+            .with_header("X-Vouch-User", "bob")
+            .match_header("Cookie", "MyCookie=my-token-value")
+            .create();
+
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(1))
+            .build()
+            .unwrap();
+
+        let provider = VouchIdentityProvider::new_test(
+            server.url() + "/validate",
+            "MyCookie".to_string(),
+            "test.example.com".to_string(),
+            client,
+        )
+        .unwrap();
+
+        let result = run_async(provider.validate_token("my-token-value".to_string()));
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn validate_token_sends_correct_host_header() {
+        let mut server = Server::new();
+
+        let _mock = server.mock("GET", "/validate")
+            .with_status(200)
+            .with_header("X-Vouch-User", "charlie")
+            .match_header("Host", "my-custom-domain.com")
+            .create();
+
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(1))
+            .build()
+            .unwrap();
+
+        let provider = VouchIdentityProvider::new_test(
+            server.url() + "/validate",
+            "VouchCookie".to_string(),
+            "my-custom-domain.com".to_string(),
+            client,
+        )
+        .unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn validate_token_connection_error() {
+        let provider = VouchIdentityProvider::with_endpoint("http://localhost:12345/validate".to_string()).unwrap();
+
+        let result = run_async(provider.validate_token("test-token".to_string()));
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), DomainError::PartnerUnavailable(_)));
+    }
+
+    #[test]
+    fn test_accessors() {
+        let provider = VouchIdentityProvider::new_test(
+            "http://test:8080/validate".to_string(),
+            "TestCookie".to_string(),
+            "test.domain.com".to_string(),
+            reqwest::Client::new(),
+        )
+        .unwrap();
+
+        assert_eq!(provider.endpoint(), "http://test:8080/validate");
+        assert_eq!(provider.cookie_name(), "TestCookie");
+        assert_eq!(provider.domain(), "test.domain.com");
     }
 }
