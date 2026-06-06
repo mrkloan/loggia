@@ -2,27 +2,37 @@
 FROM rust:1.95.0 AS builder
 WORKDIR /usr/src
 
-# Copy manifests and lock file first for dependency layer caching
+# Copy root manifest and lock file first for dependency layer caching
 COPY Cargo.toml Cargo.lock ./
-COPY domain/Cargo.toml domain/Cargo.toml
-COPY infrastructure/sqlite/Cargo.toml infrastructure/sqlite/Cargo.toml
-COPY application/api/Cargo.toml application/api/Cargo.toml
 
-# Create stub source files so cargo can resolve the workspace and fetch/build dependencies
-RUN mkdir -p domain/src infrastructure/sqlite/src application/api/src && \
-    echo "" > domain/src/lib.rs && \
-    echo "" > infrastructure/sqlite/src/lib.rs && \
-    echo "fn main() {}" > application/api/src/main.rs
+# Copy all Cargo.toml files from workspace members
+# Using wildcard to ensure any new crate added will be included
+COPY */Cargo.toml ./
 
-# Build dependencies only (this layer is cached unless Cargo.toml/Cargo.lock change)
-RUN cargo build --release --package api
+# Create stub source files for all crates with Cargo.toml
+# This dynamically finds all Cargo.toml files (except root) and creates appropriate stubs
+RUN find . -maxdepth 2 -name "Cargo.toml" ! -path "./Cargo.toml" -exec dirname {} \; | while read -r crate_dir; do \
+    src_dir="$crate_dir/src"; \
+    mkdir -p "$src_dir"; \
+    # Check if the crate path contains "api" (binary crate)
+    if echo "$crate_dir" | grep -q "api"; then \
+      echo "fn main() {}" > "$src_dir/main.rs"; \
+    else \
+      echo "" > "$src_dir/lib.rs"; \
+    fi; \
+done
+
+# Build all workspace dependencies (this layer is cached unless Cargo.toml/Cargo.lock change)
+# Using --workspace ensures all current and future workspace members are built
+RUN cargo build --release --workspace
 
 # Copy actual source code
 COPY . .
 
 # Rebuild with real sources (only our code recompiles, dependencies are cached)
-RUN touch domain/src/lib.rs infrastructure/sqlite/src/lib.rs application/api/src/main.rs && \
-    cargo build --release --package api
+# Touch all source files to ensure they're rebuilt with real code
+RUN find . -name "*.rs" -not -path "./target/*" -exec touch {} + && \
+    cargo build --release --workspace
 
 # runtime stage (distroless — minimal, production-focused)
 FROM gcr.io/distroless/cc-debian12
