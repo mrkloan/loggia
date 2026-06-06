@@ -15,7 +15,7 @@ use crate::http::identity::authenticate::AuthenticatedUser;
 ///
 /// - Method: GET
 /// - Path: /me
-/// - Headers: Requires `X-Vouch-User` header for authentication
+/// - Headers: Requires `X-Identity-Token` header for authentication
 ///
 /// # Responses
 ///
@@ -25,7 +25,7 @@ use crate::http::identity::authenticate::AuthenticatedUser;
 /// # Example
 ///
 /// ```bash
-/// curl -H "X-Vouch-User: alice" http://localhost:8080/me
+/// curl -H "X-Identity-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." http://localhost:8080/me
 /// ```
 ///
 /// Response:
@@ -70,12 +70,34 @@ mod tests {
         }
     }
 
-    /// Creates a test router with the mock health use case.
+    /// Mock implementation of `IdentityProvider` for testing.
+    ///
+    /// Returns a mock user for any valid token.
+    struct MockIdentityProvider;
+
+    use domain::identity::User;
+
+    #[async_trait]
+    impl domain::identity::provider::IdentityProvider for MockIdentityProvider {
+        async fn validate_token(&self, _token: String) -> DomainResult<User> {
+            // For testing, return a mock user
+            User::new("testuser".to_string())
+        }
+    }
+
+    /// Creates a test router with mock services.
     ///
     /// This is used to test HTTP handlers in isolation without requiring
-    /// a real database connection.
+    /// a real database connection or Vouch Proxy.
     fn test_router() -> Router {
-        crate::http::router(Arc::new(MockHealthUseCase))
+        use std::sync::Arc;
+        use crate::AppState;
+        use domain::identity::provider::IdentityProviderRef;
+        
+        let health_use_case = Arc::new(MockHealthUseCase);
+        let identity_provider: IdentityProviderRef = Arc::new(MockIdentityProvider);
+        let app_state = AppState::new(health_use_case, identity_provider);
+        crate::http::router(app_state)
     }
 
     /// Helper function to extract JSON body from a response.
@@ -92,7 +114,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri("/me")
-                    .header("X-Vouch-User", "alice")
+                    .header("X-Identity-Token", "valid-token")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -101,25 +123,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let json = body_json(response.into_body()).await;
-        assert_eq!(json["username"], "alice");
-    }
-
-    #[tokio::test]
-    async fn get_me_with_trimmed_username_returns_trimmed_value() {
-        let response = test_router()
-            .oneshot(
-                Request::builder()
-                    .uri("/me")
-                    .header("X-Vouch-User", "  bob  ")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let json = body_json(response.into_body()).await;
-        assert_eq!(json["username"], "bob");
+        assert_eq!(json["username"], "testuser");
     }
 
     #[tokio::test]
@@ -136,16 +140,16 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
         let json = body_json(response.into_body()).await;
-        assert_eq!(json["error"], "Missing X-Vouch-User header");
+        assert_eq!(json["error"], "missing_identity_token");
     }
 
     #[tokio::test]
-    async fn get_me_with_blank_header_returns_401_with_validation_message() {
+    async fn get_me_with_blank_header_returns_401() {
         let response = test_router()
             .oneshot(
                 Request::builder()
                     .uri("/me")
-                    .header("X-Vouch-User", "   ")
+                    .header("X-Identity-Token", "   ")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -154,7 +158,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
         let json = body_json(response.into_body()).await;
-        assert_eq!(json["error"], "Missing X-Vouch-User header");
+        assert_eq!(json["error"], "missing_identity_token");
     }
 
     #[tokio::test]

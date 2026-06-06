@@ -7,7 +7,7 @@ The system SHALL provide a `VouchIdentityProvider` in the infrastructure layer t
 - **WHEN** `VouchIdentityProvider::validate_token` is called with a token
 - **THEN** the system makes a GET request to the configured Vouch Proxy `/validate` URL
 - **AND** the request includes a Cookie header with the token
-- **AND** the request includes a Host header matching the domain from the VOUCH_VALIDATE_URL
+- **AND** the request includes a Host header matching the configured domain from `VOUCH_DOMAIN`
 
 #### Scenario: Username extracted from X-Vouch-User response header
 - **WHEN** Vouch Proxy returns 200 OK with a `X-Vouch-User` header
@@ -31,7 +31,7 @@ The system SHALL provide a `VouchIdentityProvider` in the infrastructure layer t
 - **THEN** the system returns `Err(DomainError::Validation("Username cannot be blank"))`
 
 ### Requirement: VouchIdentityProvider is configurable via environment variables
-The system SHALL allow configuration of `VouchIdentityProvider` through environment variables for the Vouch Proxy endpoint and cookie name.
+The system SHALL allow configuration of `VouchIdentityProvider` through environment variables for the Vouch Proxy endpoint, cookie name, and domain.
 
 #### Scenario: Default VOUCH_VALIDATE_URL is used
 - **WHEN** `VOUCH_VALIDATE_URL` environment variable is not set
@@ -49,6 +49,10 @@ The system SHALL allow configuration of `VouchIdentityProvider` through environm
 - **WHEN** `VOUCH_COOKIE` environment variable is set to a custom cookie name
 - **THEN** the system uses that cookie name in the validation request
 
-#### Scenario: Host header is derived from VOUCH_VALIDATE_URL
-- **WHEN** `VouchIdentityProvider` is created with a VOUCH_VALIDATE_URL
-- **THEN** the Host header for validation requests uses the host portion of that URL
+#### Scenario: Default VOUCH_DOMAIN is used
+- **WHEN** `VOUCH_DOMAIN` environment variable is not set
+- **THEN** the system defaults to `example.com`
+
+#### Scenario: Custom VOUCH_DOMAIN is used
+- **WHEN** `VOUCH_DOMAIN` environment variable is set to a custom domain
+- **THEN** the system uses that domain in the Host header of validation requests

@@ -3,12 +3,14 @@ resolver = "2"
 members = [
     "domain",
     "infrastructure/sqlite",
+    "infrastructure/vouch",
     "application/api",
 ]
 
 [workspace.dependencies]
 domain = { path = "domain" }
 sqlite = { path = "infrastructure/sqlite" }
+vouch = { path = "infrastructure/vouch" }
 tokio = { version = "1.52.3", features = ["full"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
@@ -19,3 +21,5 @@ sqlx = { version = "0.9.0", features = ["runtime-tokio", "sqlite", "macros"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 tower-http = { version = "0.6.11", features = ["trace"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+url = "2"

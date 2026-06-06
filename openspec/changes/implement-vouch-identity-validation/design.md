@@ -47,16 +47,16 @@ The existing identity flow uses an Axum extractor (`AuthenticatedUser`) that sim
 
 **Decision**: Create new `infrastructure/vouch` crate with `VouchIdentityProvider` struct implementing `IdentityProvider`.
 
-**Rationale**: This isolates Vouch Proxy-specific logic (HTTP client, cookie handling, URL parsing) from the domain and application layers. The adapter is responsible for:
+**Rationale**: This isolates Vouch Proxy-specific logic (HTTP client, cookie handling, domain configuration) from the domain and application layers. The adapter is responsible for:
 - Calling Vouch Proxy's `/validate` endpoint
-- Setting required headers (Host, Cookie)
+- Setting required headers (Host with configured domain, Cookie with token)
 - Extracting username from `X-Vouch-User` response header
 - Mapping Vouch responses to domain errors
 
-**Configuration**: Two environment variables:
+**Configuration**: Three environment variables:
 - `VOUCH_VALIDATE_URL`: Full URL (default: `http://vouch-proxy:9090/validate`)
 - `VOUCH_COOKIE`: Cookie name (default: `VouchCookie`)
-- Domain is extracted from `VOUCH_VALIDATE_URL` via URL parsing (no separate env var)
+- `VOUCH_DOMAIN`: Domain for Host header (default: `example.com`)
 
 ### 4. New Error Variants in DomainError
 
@@ -87,12 +87,20 @@ The existing identity flow uses an Axum extractor (`AuthenticatedUser`) that sim
 
 **Rationale**: `reqwest` is the most idiomatic, modern, and widely-used HTTP client for Rust with Tokio. It provides:
 - Async support out of the box
-- Cookie handling
+- Cookie handling (via manual Cookie header)
 - Automatic connection pooling
 - Good error types
 - Broad ecosystem compatibility
 
-### 7. Async Trait for IdentityProvider
+### 7. Host Header from VOUCH_DOMAIN
+
+**Decision**: Use a dedicated `VOUCH_DOMAIN` environment variable (default: `example.com`) for the Host header in validation requests, instead of extracting it from the URL.
+
+**Rationale**: This simplifies configuration and makes the domain explicitly configurable. Vouch Proxy requires the Host header to match one of its configured domains, which may differ from the URL's host (e.g., when using a load balancer or proxy).
+
+**Previous approach**: The `get_host()` method attempted to extract host and port from `VOUCH_VALIDATE_URL`, but this was complex and error-prone. Using a dedicated `VOUCH_DOMAIN` variable is clearer and more flexible.
+
+### 8. Async Trait for IdentityProvider
 
 **Decision**: Use `#[async_trait]` macro to make `IdentityProvider` object-safe for use with `Arc<dyn IdentityProvider + Send + Sync>`.
 
@@ -114,9 +122,10 @@ The existing identity flow uses an Axum extractor (`AuthenticatedUser`) that sim
 
 **Deployment:**
 1. Deploy Vouch Proxy with `/validate` endpoint configured
-2. Update infrastructure to inject `X-Identity-Token` header instead of `X-Vouch-User`
-3. Deploy new API version with vouch adapter and updated extractor
-4. Monitor for authentication failures
+2. Set `VOUCH_DOMAIN` to match a domain in `vouch.domains` (e.g., `example.com`)
+3. Update infrastructure to inject `X-Identity-Token` header instead of `X-Vouch-User`
+4. Deploy new API version with vouch adapter and updated extractor
+5. Monitor for authentication failures
 
 **Rollback:**
 - Revert to previous API version that uses `X-Vouch-User` header

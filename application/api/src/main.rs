@@ -26,7 +26,35 @@ mod http;
 use std::sync::Arc;
 use tracing_subscriber::EnvFilter;
 use domain::health::check_health::HealthService;
+use domain::identity::provider::IdentityProviderRef;
 use sqlite::health::SqliteHealthRepository;
+use vouch::VouchIdentityProvider;
+
+/// Application state containing all services and providers needed by the API.
+///
+/// This struct is used as the router state and provides access to:
+/// - Health check use case
+/// - Identity provider for token validation
+#[derive(Clone)]
+pub struct AppState {
+    /// The health check use case from the domain layer.
+    pub health_use_case: Arc<dyn domain::health::check_health::CheckHealthUseCase>,
+    /// The identity provider for validating identity tokens.
+    pub identity_provider: IdentityProviderRef,
+}
+
+impl AppState {
+    /// Creates a new `AppState` with the given services.
+    pub fn new(
+        health_use_case: Arc<dyn domain::health::check_health::CheckHealthUseCase>,
+        identity_provider: IdentityProviderRef,
+    ) -> Self {
+        Self {
+            health_use_case,
+            identity_provider,
+        }
+    }
+}
 
 /// Application entry point.
 ///
@@ -70,7 +98,16 @@ async fn main() {
     let health_repo = Arc::new(SqliteHealthRepository::new(pool));
     let health_service = Arc::new(HealthService::new(health_repo));
 
-    let app = http::router(health_service);
+    // Create identity provider
+    let identity_provider: IdentityProviderRef = Arc::new(
+        VouchIdentityProvider::new()
+            .expect("Failed to create VouchIdentityProvider: invalid configuration"),
+    );
+
+    // Create application state
+    let app_state = AppState::new(health_service, identity_provider);
+
+    let app = http::router(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080")
         .await
