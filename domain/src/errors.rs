@@ -13,6 +13,8 @@ use std::fmt;
 /// - `Database`: Errors originating from database operations
 /// - `NotFound`: Errors when a requested resource cannot be found
 /// - `Internal`: Unexpected internal errors that violate domain invariants
+/// - `Authentication`: Identity validation failures (invalid or expired tokens)
+/// - `PartnerUnavailable`: External service (e.g., Vouch Proxy) is unreachable
 ///
 /// # Design Rationale
 ///
@@ -31,6 +33,10 @@ pub enum DomainError {
     NotFound(String),
     /// An unexpected internal error occurred that violates domain assumptions.
     Internal(String),
+    /// Identity validation failed (invalid or expired token).
+    Authentication(String),
+    /// External identity service (e.g., Vouch Proxy) is unreachable.
+    PartnerUnavailable(String),
 }
 
 impl fmt::Display for DomainError {
@@ -40,6 +46,8 @@ impl fmt::Display for DomainError {
             DomainError::Database(msg) => write!(f, "Database error: {}", msg),
             DomainError::NotFound(msg) => write!(f, "Not found: {}", msg),
             DomainError::Internal(msg) => write!(f, "Internal error: {}", msg),
+            DomainError::Authentication(msg) => write!(f, "Authentication error: {}", msg),
+            DomainError::PartnerUnavailable(msg) => write!(f, "Partner unavailable: {}", msg),
         }
     }
 }
