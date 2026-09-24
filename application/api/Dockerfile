@@ -5,23 +5,18 @@ WORKDIR /usr/src
 # Copy root manifest and lock file first for dependency layer caching
 COPY Cargo.toml Cargo.lock ./
 
-# Copy all Cargo.toml files from workspace members at any depth
-# Using explicit paths to ensure all current and future crates are included
-COPY */Cargo.toml ./ 
-COPY */*/Cargo.toml ./ 
+# Copy all Cargo.toml files from workspace members explicitly to preserve directory structure
+COPY domain/Cargo.toml domain/Cargo.toml
+COPY infrastructure/sqlite/Cargo.toml infrastructure/sqlite/Cargo.toml
+COPY infrastructure/vouch/Cargo.toml infrastructure/vouch/Cargo.toml
+COPY application/api/Cargo.toml application/api/Cargo.toml
 
-# Create stub source files for all crates with Cargo.toml
-# This dynamically finds all Cargo.toml files (except root) and creates appropriate stubs
-RUN find . -name "Cargo.toml" ! -path "./Cargo.toml" -exec dirname {} \; | while read -r crate_dir; do \
-    src_dir="$crate_dir/src"; \
-    mkdir -p "$src_dir"; \
-    # Check if the crate path contains "api" (binary crate)
-    if echo "$crate_dir" | grep -q "api"; then \
-      echo "fn main() {}" > "$src_dir/main.rs"; \
-    else \
-      echo "" > "$src_dir/lib.rs"; \
-    fi; \
-done
+# Create stub source files so cargo can resolve the workspace and fetch/build dependencies
+RUN mkdir -p domain/src infrastructure/sqlite/src infrastructure/vouch/src application/api/src && \
+    echo "" > domain/src/lib.rs && \
+    echo "" > infrastructure/sqlite/src/lib.rs && \
+    echo "" > infrastructure/vouch/src/lib.rs && \
+    echo "fn main() {}" > application/api/src/main.rs
 
 # Build dependencies (this layer is cached unless Cargo.toml/Cargo.lock change)
 RUN cargo build --release --package api
