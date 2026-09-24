@@ -2,17 +2,17 @@
 //!
 //! This module contains the HTTP handler for the health check endpoint.
 
-use std::sync::Arc;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use domain::health::check_health::CheckHealthUseCase;
+
+use crate::AppState;
 
 /// HTTP handler for the health check endpoint.
 ///
 /// This handler:
-/// 1. Extracts the `CheckHealthUseCase` from the request state
+/// 1. Extracts the `CheckHealthUseCase` from the AppState
 /// 2. Executes the health check use case
 /// 3. Transforms the domain result into an HTTP response
 ///
@@ -20,7 +20,7 @@ use domain::health::check_health::CheckHealthUseCase;
 ///
 /// - Method: GET
 /// - Path: /health
-/// - State: Requires `CheckHealthUseCase` in Axum state
+/// - State: Requires `AppState` containing `CheckHealthUseCase`
 ///
 /// # Responses
 ///
@@ -50,8 +50,9 @@ use domain::health::check_health::CheckHealthUseCase;
 /// - It handles errors gracefully, converting domain errors to appropriate HTTP responses
 /// - It has no knowledge of how the health check is implemented (SQLite, in-memory, etc.)
 pub async fn handle(
-    State(use_case): State<Arc<dyn CheckHealthUseCase>>,
+    State(app_state): State<AppState>,
 ) -> impl IntoResponse {
+    let use_case = &app_state.health_use_case;
     match use_case.execute().await {
         Ok(health) => (StatusCode::OK, Json(health)).into_response(),
         Err(e) => (

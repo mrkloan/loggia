@@ -18,22 +18,21 @@
 pub mod health;
 pub mod identity;
 
-use std::sync::Arc;
 use axum::Router;
 use axum::routing::get;
-use domain::health::check_health::CheckHealthUseCase;
+use crate::AppState;
 
 /// Creates and configures the Axum router with all API endpoints.
 ///
 /// This is the **composition root** for the HTTP layer. It:
 /// 1. Creates a new Axum `Router`
 /// 2. Registers all routes with their handlers
-/// 3. Configures shared state (domain use cases)
+/// 3. Configures shared state (domain use cases, identity provider)
 /// 4. Returns the configured router
 ///
 /// # Arguments
 ///
-/// * `health_use_case` - An implementation of the `CheckHealthUseCase` inbound port
+/// * `state` - The application state containing all required services
 ///
 /// # Returns
 ///
@@ -41,19 +40,19 @@ use domain::health::check_health::CheckHealthUseCase;
 ///
 /// # Routes
 ///
-/// - `GET /health` - System health check endpoint
-/// - `GET /me` - Get current authenticated user endpoint
+/// - `GET /health` - System health check endpoint (public, no auth required)
+/// - `GET /me` - Get current authenticated user endpoint (requires X-Identity-Token)
 ///
 /// # Design Rationale
 ///
-/// The router is configured as a pure function that takes domain use cases as arguments.
+/// The router is configured as a pure function that takes application state as an argument.
 /// This makes it:
-/// - Easy to test (can pass mock use cases)
+/// - Easy to test (can pass mock implementations)
 /// - Explicit about its dependencies
 /// - Reusable in different contexts (e.g., integration tests, multiple servers)
-pub fn router(health_use_case: Arc<dyn CheckHealthUseCase>) -> Router {
+pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health::check_health::handle))
         .route("/me", get(identity::get_me::handle))
-        .with_state(health_use_case)
+        .with_state(state)
 }
