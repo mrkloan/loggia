@@ -1,9 +1,11 @@
 //! User identity domain module.
 //!
 //! This module contains the domain logic for user identity and authentication.
-//! It defines the `User` entity and its business rules.
+//! It defines the `User` entity, its business rules, and the `IdentityProvider` port.
 
 use crate::errors::{DomainError, DomainResult};
+
+pub mod provider;
 
 /// Represents a user in the system.
 ///

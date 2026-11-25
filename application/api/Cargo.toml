@@ -11,6 +11,7 @@ path = "src/main.rs"
 async-trait = { workspace = true }
 domain = { workspace = true }
 sqlite = { workspace = true }
+vouch = { workspace = true }
 tokio = { workspace = true }
 axum = { workspace = true }
 serde = { workspace = true }
